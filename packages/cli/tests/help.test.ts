@@ -6,6 +6,7 @@ describe("help output", () => {
     const program = createProgram();
     const help = program.helpInformation();
 
+    expect(help).toContain("--version");
     expect(help).toContain("docs");
     expect(help).toContain("skills");
     expect(help).toContain("issues");

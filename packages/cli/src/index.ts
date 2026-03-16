@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 import type {
   SdkAttachmentInput,
   SdkCommentInput,
@@ -34,6 +37,25 @@ import { getGlobalOptions } from "./runtime/options.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
+}
+
+function readCliVersion(): string {
+  const indexDirectory = path.dirname(fileURLToPath(import.meta.url));
+  const packageJsonCandidates = [
+    path.resolve(indexDirectory, "../package.json"),
+    path.resolve(indexDirectory, "../../package.json"),
+  ];
+
+  for (const packageJsonPath of packageJsonCandidates) {
+    try {
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+      if (isRecord(packageJson) && typeof packageJson.version === "string") {
+        return packageJson.version;
+      }
+    } catch {}
+  }
+
+  return "0.0.0";
 }
 
 function hasString(value: Record<string, unknown>, key: string): boolean {
@@ -134,6 +156,7 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   program
     .name("linear")
+    .version(readCliVersion(), "-v, --version", "output the version number")
     .description("Agent-first Linear CLI")
     .addHelpText("after", rootHelpText)
     .option("--json", "Output JSON envelope")
