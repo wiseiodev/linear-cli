@@ -6,6 +6,12 @@
     "linear": "dist/bin/linear.js",
     "li": "dist/bin/linear.js"
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
