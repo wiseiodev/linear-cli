@@ -21,20 +21,26 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && chmod +x dist/bin/linear.js",
+    "build": "tsup --config tsup.config.ts && chmod +x dist/bin/linear.js",
     "clean": "rm -rf dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "dev": "tsx src/bin/linear.ts"
   },
   "dependencies": {
+    "@linear/sdk": "^77.0.0",
+    "commander": "^14.0.3",
+    "ink": "^6.8.0",
+    "keytar": "^7.9.0",
+    "open": "^11.0.0",
+    "react": "^19.2.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
     "@wiseiodev/linear-core": "workspace:*",
     "@wiseiodev/skills-catalog": "workspace:*",
     "@wiseiodev/tui": "workspace:*",
-    "commander": "^14.0.3",
-    "open": "^11.0.0"
-  },
-  "devDependencies": {
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0"
   }
 }
