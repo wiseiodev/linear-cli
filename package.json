@@ -1,0 +1,37 @@
+{
+  "name": "linear-agent-cli",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean && rm -rf coverage",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "check": "biome check .",
+    "check:write": "biome check --write .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:watch": "vitest --config vitest.workspace.ts",
+    "verify": "pnpm check && pnpm typecheck && pnpm test",
+    "release:pre": "semantic-release --extends ./.releaserc.prerelease.cjs",
+    "release:prod": "semantic-release --extends ./.releaserc.release.cjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.7",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/node": "^25.5.0",
+    "semantic-release": "^25.0.3",
+    "turbo": "^2.8.17",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

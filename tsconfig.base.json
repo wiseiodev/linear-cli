@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@linear-agent/linear-core": ["packages/linear-core/src/index.ts"],
+      "@linear-agent/skills-catalog": ["packages/skills-catalog/src/index.ts"],
+      "@linear-agent/tui": ["packages/tui/src/index.tsx"]
+    },
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": false,
+    "types": ["node"]
+  }
+}
