@@ -1,3 +1,10 @@
+# [1.0.0-alpha.2](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* **packaging:** bundle internal workspace deps for global install ([8ed484e](https://github.com/wiseiodev/linear-cli/commit/8ed484e4981df9ac969381b1c930f4cea4ab8a11))
+
 # 1.0.0-alpha.1 (2026-03-16)
 
 
