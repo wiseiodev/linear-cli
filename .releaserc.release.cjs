@@ -21,7 +21,12 @@ module.exports = {
         pkgRoot: "packages/cli",
       },
     ],
-    "@semantic-release/github",
+    [
+      "@semantic-release/github",
+      {
+        failComment: false,
+      },
+    ],
     [
       "@semantic-release/git",
       {
