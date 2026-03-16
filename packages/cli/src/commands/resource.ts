@@ -3,8 +3,8 @@ import type {
   LinearAction,
   LinearEntity,
   OutputEnvelope,
-} from "@linear-agent/linear-core";
-import { errorEnvelope, normalizeError, successEnvelope } from "@linear-agent/linear-core";
+} from "@wiseiodev/linear-core";
+import { errorEnvelope, normalizeError, successEnvelope } from "@wiseiodev/linear-core";
 import type { Command } from "commander";
 import { renderEnvelope } from "../formatters/output.js";
 import { getGlobalOptions } from "../runtime/options.js";

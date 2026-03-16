@@ -10,10 +10,10 @@ Agent-first Linear CLI + TUI built with TypeScript, pnpm, Turborepo, the Linear 
 
 ## Packages
 
-- `@linear-agent/linear-core`: auth, config, token storage, SDK gateway, output envelope
-- `@linear-agent/skills-catalog`: bundled skill registry + Vercel Skills CLI installer wrapper
-- `@linear-agent/tui`: Ink React terminal UI for issues, boards, cycles
-- `@linear-agent/cli`: `linear` and `li` command binaries
+- `@wiseiodev/linear-core`: auth, config, token storage, SDK gateway, output envelope
+- `@wiseiodev/skills-catalog`: bundled skill registry + Vercel Skills CLI installer wrapper
+- `@wiseiodev/tui`: Ink React terminal UI for issues, boards, cycles
+- `@wiseiodev/linear-cli`: `linear` and `li` command binaries
 
 ## Install
 
@@ -30,8 +30,8 @@ pnpm verify
 ## Run CLI
 
 ```bash
-pnpm --filter @linear-agent/cli dev -- --help
-pnpm --filter @linear-agent/cli dev -- issues list --json
+pnpm --filter @wiseiodev/linear-cli dev -- --help
+pnpm --filter @wiseiodev/linear-cli dev -- issues list --json
 ```
 
 ## Example Commands

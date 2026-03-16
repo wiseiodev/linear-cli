@@ -1,4 +1,4 @@
-import type { ErrorEnvelope, OutputEnvelope } from "@linear-agent/linear-core";
+import type { ErrorEnvelope, OutputEnvelope } from "@wiseiodev/linear-core";
 import type { GlobalOptions } from "../runtime/options.js";
 
 function printHumanData(data: unknown): void {

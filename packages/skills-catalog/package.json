@@ -1,5 +1,5 @@
 {
-  "name": "@linear-agent/skills-catalog",
+  "name": "@wiseiodev/skills-catalog",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",

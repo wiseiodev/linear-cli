@@ -16,15 +16,15 @@ import type {
   SdkUserUpdateInput,
   SdkWorkflowStateInput,
   SdkWorkflowStateUpdateInput,
-} from "@linear-agent/linear-core";
+} from "@wiseiodev/linear-core";
 import {
   AuthManager,
   errorEnvelope,
   normalizeError,
   successEnvelope,
-} from "@linear-agent/linear-core";
-import { getSkill, installSkill, listSkills } from "@linear-agent/skills-catalog";
-import { runLinearTui } from "@linear-agent/tui";
+} from "@wiseiodev/linear-core";
+import { getSkill, installSkill, listSkills } from "@wiseiodev/skills-catalog";
+import { runLinearTui } from "@wiseiodev/tui";
 import { Command } from "commander";
 import open from "open";
 import { registerResourceCommand } from "./commands/resource.js";

@@ -7,12 +7,9 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   resolve: {
     alias: {
-      "@linear-agent/linear-core": path.resolve(currentDirectory, "../linear-core/src/index.ts"),
-      "@linear-agent/skills-catalog": path.resolve(
-        currentDirectory,
-        "../skills-catalog/src/index.ts",
-      ),
-      "@linear-agent/tui": path.resolve(currentDirectory, "../tui/src/index.tsx"),
+      "@wiseiodev/linear-core": path.resolve(currentDirectory, "../linear-core/src/index.ts"),
+      "@wiseiodev/skills-catalog": path.resolve(currentDirectory, "../skills-catalog/src/index.ts"),
+      "@wiseiodev/tui": path.resolve(currentDirectory, "../tui/src/index.tsx"),
     },
   },
   test: {

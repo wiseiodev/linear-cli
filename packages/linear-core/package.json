@@ -1,5 +1,5 @@
 {
-  "name": "@linear-agent/linear-core",
+  "name": "@wiseiodev/linear-core",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",

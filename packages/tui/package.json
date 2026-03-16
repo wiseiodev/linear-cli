@@ -1,5 +1,5 @@
 {
-  "name": "@linear-agent/tui",
+  "name": "@wiseiodev/tui",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",

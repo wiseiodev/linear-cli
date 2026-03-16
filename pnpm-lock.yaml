@@ -50,13 +50,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@linear-agent/linear-core':
+      '@wiseiodev/linear-core':
         specifier: workspace:*
         version: link:../linear-core
-      '@linear-agent/skills-catalog':
+      '@wiseiodev/skills-catalog':
         specifier: workspace:*
         version: link:../skills-catalog
-      '@linear-agent/tui':
+      '@wiseiodev/tui':
         specifier: workspace:*
         version: link:../tui
       commander:
