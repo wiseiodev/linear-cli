@@ -1,5 +1,6 @@
 module.exports = {
   branches: [
+    "release",
     {
       name: "main",
       channel: "next",
