@@ -1,3 +1,10 @@
+# [1.0.0-alpha.3](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2026-03-16)
+
+
+### Bug Fixes
+
+* **cli:** add standard --version support ([0f3de81](https://github.com/wiseiodev/linear-cli/commit/0f3de815295cc8b9d25d83e9c46baa61b9c31c6c))
+
 # [1.0.0-alpha.2](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2026-03-16)
 
 
