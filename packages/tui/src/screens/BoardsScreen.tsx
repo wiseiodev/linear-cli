@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import { useCallback } from "react";
 import { useAsyncResource } from "../hooks/useAsyncResource.js";
 import type { TuiGateway } from "../types.js";
 
@@ -8,7 +9,8 @@ interface BoardsScreenProps {
 }
 
 export function BoardsScreen({ gateway, refreshToken }: BoardsScreenProps) {
-  const state = useAsyncResource(() => gateway.listProjects({ limit: 10 }), refreshToken);
+  const loadProjects = useCallback(() => gateway.listProjects({ limit: 10 }), [gateway]);
+  const state = useAsyncResource(loadProjects, refreshToken);
 
   if (state.loading) {
     return <Text>Loading boards...</Text>;

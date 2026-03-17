@@ -12,7 +12,10 @@ export function Layout({ screen, children }: PropsWithChildren<LayoutProps>) {
       <Text bold color="cyan">
         Linear TUI
       </Text>
-      <Text color="gray">Screens: [1] Issues [2] Boards [3] Cycles | [r] refresh | [q] quit</Text>
+      <Text color="gray">
+        Screens: [1] Issues [2] Boards [3] Cycles | [j/k] move | [n/p] page | [o] open issue | [r]
+        refresh | [q] quit
+      </Text>
       <Text>
         Active: <Text color="green">{screen}</Text>
       </Text>

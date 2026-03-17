@@ -2,7 +2,10 @@ export interface IssueViewModel {
   readonly id: string;
   readonly identifier: string;
   readonly title: string;
+  readonly priority: number;
   readonly stateName?: string;
+  readonly updatedAt: string;
+  readonly url: string;
 }
 
 export interface ProjectViewModel {

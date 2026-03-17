@@ -1,5 +1,5 @@
 import { render } from "ink-testing-library";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { App } from "../src/App.js";
 import type { TuiGateway } from "../src/types.js";
 
@@ -17,6 +17,16 @@ function createStubGateway(): TuiGateway {
             createdAt: "2024-01-01T00:00:00.000Z",
             updatedAt: "2024-01-01T00:00:00.000Z",
             stateName: "Todo",
+          },
+          {
+            id: "i_2",
+            identifier: "ENG-2",
+            title: "Second issue",
+            priority: 1,
+            url: "https://linear.app/issue/ENG-2",
+            createdAt: "2024-01-02T00:00:00.000Z",
+            updatedAt: "2024-01-02T00:00:00.000Z",
+            stateName: "In Progress",
           },
         ],
         nextCursor: null,
@@ -59,12 +69,82 @@ function createStubGateway(): TuiGateway {
 describe("App", () => {
   test("renders issues screen by default", async () => {
     const gateway = createStubGateway();
-    const app = render(<App gateway={gateway} initialScreen="issues" />);
+    const app = render(
+      <App
+        gateway={gateway}
+        screen="issues"
+        refreshToken={0}
+        onRefresh={() => {}}
+        onSelectScreen={() => {}}
+        openUrl={async () => {}}
+      />,
+    );
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(app.lastFrame()).toContain("Linear TUI");
+    expect(app.lastFrame()).toContain("Key");
     expect(app.lastFrame()).toContain("Issue title");
+    expect(app.lastFrame()).toContain("Selected: ENG-1");
+    app.unmount();
+  });
+
+  test("does not refetch boards on every render", async () => {
+    const listProjects = vi.fn(async () => ({
+      items: [
+        {
+          id: "p_1",
+          name: "Project",
+          state: "planned",
+          progress: 0.2,
+          url: "https://linear.app/project/1",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    }));
+
+    const gateway: TuiGateway = {
+      ...createStubGateway(),
+      listProjects,
+    };
+
+    const app = render(
+      <App
+        gateway={gateway}
+        screen="boards"
+        refreshToken={0}
+        onRefresh={() => {}}
+        onSelectScreen={() => {}}
+        openUrl={async () => {}}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(listProjects).toHaveBeenCalledTimes(1);
+    app.unmount();
+  });
+
+  test("opens the selected issue in the browser when pressing o", async () => {
+    const openUrl = vi.fn(async () => {});
+    const gateway = createStubGateway();
+    const app = render(
+      <App
+        gateway={gateway}
+        screen="issues"
+        refreshToken={0}
+        onRefresh={() => {}}
+        onSelectScreen={() => {}}
+        openUrl={openUrl}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    app.stdin.write("o");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(openUrl).toHaveBeenCalledWith("https://linear.app/issue/ENG-1");
     app.unmount();
   });
 });

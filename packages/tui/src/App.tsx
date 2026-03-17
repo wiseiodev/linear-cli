@@ -1,5 +1,4 @@
 import { useApp, useInput } from "ink";
-import { useState } from "react";
 import { Layout } from "./components/Layout.js";
 import { BoardsScreen } from "./screens/BoardsScreen.js";
 import { CyclesScreen } from "./screens/CyclesScreen.js";
@@ -9,13 +8,22 @@ import type { TuiGateway } from "./types.js";
 
 interface AppProps {
   readonly gateway: TuiGateway;
-  readonly initialScreen: TuiScreen;
+  readonly screen: TuiScreen;
+  readonly refreshToken: number;
+  readonly onRefresh: () => void;
+  readonly onSelectScreen: (screen: TuiScreen) => void;
+  readonly openUrl: (url: string) => Promise<void>;
 }
 
-export function App({ gateway, initialScreen }: AppProps) {
+export function App({
+  gateway,
+  screen,
+  refreshToken,
+  onRefresh,
+  onSelectScreen,
+  openUrl,
+}: AppProps) {
   const { exit } = useApp();
-  const [screen, setScreen] = useState<TuiScreen>(initialScreen);
-  const [refreshToken, setRefreshToken] = useState(0);
 
   useInput((input) => {
     if (input === "q") {
@@ -24,29 +32,29 @@ export function App({ gateway, initialScreen }: AppProps) {
     }
 
     if (input === "1") {
-      setScreen("issues");
+      onSelectScreen("issues");
       return;
     }
 
     if (input === "2") {
-      setScreen("boards");
+      onSelectScreen("boards");
       return;
     }
 
     if (input === "3") {
-      setScreen("cycles");
+      onSelectScreen("cycles");
       return;
     }
 
     if (input === "r") {
-      setRefreshToken((value) => value + 1);
+      onRefresh();
     }
   });
 
   return (
     <Layout screen={screen}>
       {screen === "issues" ? (
-        <IssuesScreen gateway={gateway} refreshToken={refreshToken} />
+        <IssuesScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
       ) : screen === "boards" ? (
         <BoardsScreen gateway={gateway} refreshToken={refreshToken} />
       ) : (

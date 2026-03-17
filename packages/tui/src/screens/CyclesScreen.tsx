@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import { useCallback } from "react";
 import { useAsyncResource } from "../hooks/useAsyncResource.js";
 import type { TuiGateway } from "../types.js";
 
@@ -8,7 +9,8 @@ interface CyclesScreenProps {
 }
 
 export function CyclesScreen({ gateway, refreshToken }: CyclesScreenProps) {
-  const state = useAsyncResource(() => gateway.listCycles({ limit: 10 }), refreshToken);
+  const loadCycles = useCallback(() => gateway.listCycles({ limit: 10 }), [gateway]);
+  const state = useAsyncResource(loadCycles, refreshToken);
 
   if (state.loading) {
     return <Text>Loading cycles...</Text>;
