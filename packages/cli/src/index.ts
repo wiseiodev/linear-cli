@@ -8,6 +8,8 @@ import type {
   SdkCommentUpdateInput,
   SdkCycleInput,
   SdkCycleUpdateInput,
+  SdkInitiativeInput,
+  SdkInitiativeUpdateInput,
   SdkIssueInput,
   SdkIssueLabelInput,
   SdkIssueLabelUpdateInput,
@@ -16,6 +18,8 @@ import type {
   SdkProjectUpdateInput,
   SdkTeamInput,
   SdkTeamUpdateInput,
+  SdkTemplateInput,
+  SdkTemplateUpdateInput,
   SdkUserUpdateInput,
   SdkWorkflowStateInput,
   SdkWorkflowStateUpdateInput,
@@ -30,6 +34,7 @@ import { getSkill, installSkill, listSkills } from "@wiseiodev/skills-catalog";
 import { runLinearTui } from "@wiseiodev/tui";
 import { Command } from "commander";
 import open from "open";
+import { runInteractiveOAuthLogin } from "./auth/login.js";
 import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
 import { rootHelpText } from "./help/root-help.js";
@@ -75,10 +80,22 @@ function ensurePayload<T>(
 }
 
 function isIssueCreateInput(value: unknown): value is SdkIssueInput {
-  return isRecord(value) && hasString(value, "title") && hasString(value, "teamId");
+  return (
+    isRecord(value) &&
+    hasString(value, "teamId") &&
+    (hasString(value, "title") || hasString(value, "templateId"))
+  );
 }
 
 function isIssueUpdateInput(value: unknown): value is SdkIssueUpdateInput {
+  return isRecord(value) && Object.keys(value).length > 0;
+}
+
+function isInitiativeCreateInput(value: unknown): value is SdkInitiativeInput {
+  return isRecord(value) && hasString(value, "name");
+}
+
+function isInitiativeUpdateInput(value: unknown): value is SdkInitiativeUpdateInput {
   return isRecord(value) && Object.keys(value).length > 0;
 }
 
@@ -130,6 +147,19 @@ function isAttachmentCreateInput(value: unknown): value is SdkAttachmentInput {
   return isRecord(value) && hasString(value, "title") && hasString(value, "url");
 }
 
+function isTemplateCreateInput(value: unknown): value is SdkTemplateInput {
+  return (
+    isRecord(value) &&
+    hasString(value, "name") &&
+    hasString(value, "type") &&
+    isRecord(value.templateData)
+  );
+}
+
+function isTemplateUpdateInput(value: unknown): value is SdkTemplateUpdateInput {
+  return isRecord(value) && Object.keys(value).length > 0;
+}
+
 function isWorkflowStateCreateInput(value: unknown): value is SdkWorkflowStateInput {
   return isRecord(value) && hasString(value, "name") && hasString(value, "teamId");
 }
@@ -151,6 +181,33 @@ async function readSecret(prompt: string): Promise<string> {
   }
 }
 
+async function resolveIssueTemplateId(
+  gateway: Awaited<ReturnType<AuthManager["openSession"]>>["gateway"],
+  reference: string,
+): Promise<string> {
+  const templates = await gateway.listTemplates();
+  const exactIdMatch = templates.find((template) => template.id === reference);
+
+  if (exactIdMatch) {
+    return exactIdMatch.id;
+  }
+
+  const exactNameMatches = templates.filter((template) => template.name === reference);
+
+  if (exactNameMatches.length === 1) {
+    const [exactNameMatch] = exactNameMatches;
+    if (exactNameMatch) {
+      return exactNameMatch.id;
+    }
+  }
+
+  if (exactNameMatches.length > 1) {
+    throw new Error(`Template name "${reference}" is ambiguous. Use a template id instead.`);
+  }
+
+  throw new Error(`Template not found: ${reference}`);
+}
+
 export function createProgram(authManager = new AuthManager()): Command {
   const program = new Command();
 
@@ -170,7 +227,7 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   authCommand
     .command("api-key-set")
-    .description("Store API key for profile")
+    .description("Store API key for profile as a fallback auth method")
     .option("--api-key <key>", "Linear API key")
     .action(async (opts, cmd) => {
       const globals = getGlobalOptions(cmd);
@@ -187,61 +244,30 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   authCommand
     .command("login")
-    .description("Store OAuth tokens for profile")
-    .option("--access-token <token>", "OAuth access token")
-    .option("--refresh-token <token>", "OAuth refresh token")
-    .option("--expires-at <iso>", "Access token expiry in ISO format")
-    .option("--authorization-code <code>", "OAuth authorization code")
+    .description("Guided OAuth login for profile")
+    .option("--manual", "Use manual copy/paste login flow")
     .option("--client-id <id>", "OAuth client id")
-    .option("--token-url <url>", "OAuth token endpoint")
     .option("--redirect-uri <uri>", "OAuth redirect URI")
-    .option("--code-verifier <value>", "PKCE code verifier")
+    .option("--scopes <list>", "Comma separated scopes override")
     .action(async (opts, cmd) => {
       const globals = getGlobalOptions(cmd);
       const profile = globals.profile ?? "default";
 
       try {
-        if (typeof opts.accessToken === "string") {
-          await authManager.loginWithToken({
-            profile,
-            accessToken: opts.accessToken,
-            refreshToken: typeof opts.refreshToken === "string" ? opts.refreshToken : undefined,
-            expiresAt: typeof opts.expiresAt === "string" ? opts.expiresAt : undefined,
-          });
+        const result = await runInteractiveOAuthLogin({
+          profile,
+          manual: opts.manual === true,
+          clientId: typeof opts.clientId === "string" ? opts.clientId : undefined,
+          redirectUri: typeof opts.redirectUri === "string" ? opts.redirectUri : undefined,
+          scopes: typeof opts.scopes === "string" ? opts.scopes : undefined,
+          authManager,
+          prompt: readSecret,
+          openBrowser: async (target) => {
+            await open(target);
+          },
+        });
 
-          renderEnvelope(
-            successEnvelope("auth", "login", { profile, method: "oauth-token" }),
-            globals,
-          );
-          return;
-        }
-
-        if (
-          typeof opts.authorizationCode === "string" &&
-          typeof opts.clientId === "string" &&
-          typeof opts.tokenUrl === "string" &&
-          typeof opts.redirectUri === "string" &&
-          typeof opts.codeVerifier === "string"
-        ) {
-          await authManager.loginWithAuthorizationCode(fetch, {
-            profile,
-            clientId: opts.clientId,
-            tokenUrl: opts.tokenUrl,
-            code: opts.authorizationCode,
-            redirectUri: opts.redirectUri,
-            codeVerifier: opts.codeVerifier,
-          });
-
-          renderEnvelope(
-            successEnvelope("auth", "login", { profile, method: "oauth-authorization-code" }),
-            globals,
-          );
-          return;
-        }
-
-        throw new Error(
-          "Provide either --access-token or full authorization-code options (--authorization-code, --client-id, --token-url, --redirect-uri, --code-verifier).",
-        );
+        renderEnvelope(successEnvelope("auth", "login", result), globals);
       } catch (error) {
         const normalized = normalizeError(error);
         renderEnvelope(
@@ -261,13 +287,26 @@ export function createProgram(authManager = new AuthManager()): Command {
     .description("Show authentication status")
     .action(async (_, cmd) => {
       const globals = getGlobalOptions(cmd);
-      const status = await authManager.status(globals.profile);
-      renderEnvelope(successEnvelope("auth", "status", status), globals);
+      try {
+        const status = await authManager.status(globals.profile);
+        renderEnvelope(successEnvelope("auth", "status", status), globals);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("auth", "status", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
     });
 
   authCommand
     .command("logout")
-    .description("Clear credentials for profile")
+    .description("Clear credentials for profile but keep saved OAuth app config")
     .action(async (_, cmd) => {
       const globals = getGlobalOptions(cmd);
       const profile = globals.profile ?? "default";
@@ -284,6 +323,7 @@ export function createProgram(authManager = new AuthManager()): Command {
       const links = {
         sdk: "https://linear.app/developers/sdk",
         graphql: "https://linear.app/developers/graphql",
+        oauth: "https://linear.app/developers/oauth-2-0-authentication",
         schema: "https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql",
       };
 
@@ -369,14 +409,32 @@ export function createProgram(authManager = new AuthManager()): Command {
         });
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getIssue(id),
-      create: async (_manager, payload, cmd) =>
-        (await sessionGateway(cmd)).createIssue(
-          ensurePayload(
-            payload,
-            isIssueCreateInput,
-            "Issue create payload requires title and teamId.",
-          ),
-        ),
+      create: async (_manager, payload, cmd) => {
+        const templateReference = cmd.opts<{ template?: string }>().template;
+        const payloadWithTemplateReference =
+          templateReference && isRecord(payload)
+            ? {
+                ...payload,
+                templateId: templateReference,
+              }
+            : payload;
+        const issueInput = ensurePayload(
+          payloadWithTemplateReference,
+          isIssueCreateInput,
+          "Issue create payload requires teamId plus title or templateId.",
+        );
+
+        if (!templateReference) {
+          return (await sessionGateway(cmd)).createIssue(issueInput);
+        }
+
+        const gateway = await sessionGateway(cmd);
+        const templateId = await resolveIssueTemplateId(gateway, templateReference);
+        return gateway.createIssue({
+          ...issueInput,
+          templateId,
+        });
+      },
       update: async (_manager, id, payload, cmd) =>
         (await sessionGateway(cmd)).updateIssue(
           id,
@@ -387,6 +445,87 @@ export function createProgram(authManager = new AuthManager()): Command {
           ),
         ),
       delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteIssue(id),
+    },
+    authManager,
+  );
+
+  const issuesCommand = program.commands.find((command) => command.name() === "issues");
+  issuesCommand?.commands
+    .find((command) => command.name() === "create")
+    ?.option("--template <id-or-name>", "Apply a template by exact id or exact name");
+
+  issuesCommand
+    ?.command("browse")
+    .description("Browse issues in the interactive terminal table")
+    .action(async (_, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      if (globals.json) {
+        renderEnvelope(
+          errorEnvelope("issues", "browse", {
+            code: "UNSUPPORTED_OPERATION",
+            message: "issues browse does not support --json output",
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      try {
+        const session = await authManager.openSession({ profile: globals.profile });
+        await runLinearTui({
+          gateway: session.gateway,
+          defaultScreen: "issues",
+          openUrl: async (target) => {
+            await open(target);
+          },
+        });
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("issues", "browse", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  registerResourceCommand(
+    program,
+    "initiatives",
+    "Initiative commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        return (await sessionGateway(cmd)).listInitiatives({
+          limit: globals.limit,
+          cursor: globals.cursor,
+        });
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getInitiative(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createInitiative(
+          ensurePayload(
+            payload,
+            isInitiativeCreateInput,
+            "Initiative create payload requires name.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateInitiative(
+          id,
+          ensurePayload(
+            payload,
+            isInitiativeUpdateInput,
+            "Initiative update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteInitiative(id),
     },
     authManager,
   );
@@ -599,6 +738,35 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   registerResourceCommand(
     program,
+    "templates",
+    "Template commands",
+    {
+      list: async (_manager, cmd) => (await sessionGateway(cmd)).listTemplates(),
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getTemplate(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createTemplate(
+          ensurePayload(
+            payload,
+            isTemplateCreateInput,
+            "Template create payload requires name, type, and templateData.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateTemplate(
+          id,
+          ensurePayload(
+            payload,
+            isTemplateUpdateInput,
+            "Template update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteTemplate(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
     "states",
     "Workflow state commands",
     {
@@ -638,12 +806,32 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--screen <name>", "issues | boards | cycles", "issues")
     .action(async (opts, cmd) => {
       const globals = getGlobalOptions(cmd);
-      const session = await authManager.openSession({ profile: globals.profile });
-      await runLinearTui({
-        gateway: session.gateway,
-        initialScreen:
-          opts.screen === "boards" || opts.screen === "cycles" ? opts.screen : "issues",
-      });
+      try {
+        const session = await authManager.openSession({ profile: globals.profile });
+        await runLinearTui({
+          gateway: session.gateway,
+          defaultScreen:
+            opts.screen === "boards" || opts.screen === "cycles" ? opts.screen : "issues",
+          openUrl: async (target) => {
+            await open(target);
+          },
+        });
+      } catch (error) {
+        const normalized = normalizeError(error);
+        const message =
+          normalized.code === "AUTH_REQUIRED"
+            ? `${normalized.message} Run linear auth login.`
+            : normalized.message;
+        renderEnvelope(
+          errorEnvelope("tui", "open", {
+            code: normalized.code,
+            message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
     });
 
   return program;

@@ -5,10 +5,21 @@ describe("help output", () => {
   test("contains docs and skills commands", () => {
     const program = createProgram();
     const help = program.helpInformation();
+    const issuesHelp =
+      program.commands.find((command) => command.name() === "issues")?.helpInformation() ?? "";
+    const initiativesHelp =
+      program.commands.find((command) => command.name() === "initiatives")?.helpInformation() ?? "";
+    const templatesHelp =
+      program.commands.find((command) => command.name() === "templates")?.helpInformation() ?? "";
 
     expect(help).toContain("--version");
     expect(help).toContain("docs");
     expect(help).toContain("skills");
     expect(help).toContain("issues");
+    expect(help).toContain("initiatives");
+    expect(help).toContain("templates");
+    expect(issuesHelp).toContain("browse");
+    expect(initiativesHelp).toContain("create");
+    expect(templatesHelp).toContain("list");
   });
 });

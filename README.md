@@ -38,8 +38,10 @@ pnpm --filter @wiseiodev/linear-cli dev -- issues list --json
 
 ```bash
 # Auth
-linear auth api-key-set --api-key "$LINEAR_API_KEY"
+linear auth login
+linear auth login --manual
 linear auth status --json
+linear auth api-key-set --api-key "$LINEAR_API_KEY"
 
 # Docs bookmark
 linear docs
@@ -51,6 +53,7 @@ linear skills install issue-triage
 
 # CRUD
 linear issues list --limit 10
+linear issues browse
 linear issues create --input '{"title":"Investigate bug","teamId":"<team-id>"}'
 linear projects list
 
@@ -97,4 +100,5 @@ npx skills add <org/repo/path> https://github.com/vercel-labs/skills
 
 - [SDK docs](https://linear.app/developers/sdk)
 - [GraphQL docs](https://linear.app/developers/graphql)
+- [OAuth docs](https://linear.app/developers/oauth-2-0-authentication)
 - [SDK GraphQL schema](https://github.com/linear/linear/blob/master/packages/sdk/src/schema.graphql)
