@@ -1,9 +1,10 @@
 import { useApp, useInput } from "ink";
 import { Layout } from "./components/Layout.js";
-import { BoardsScreen } from "./screens/BoardsScreen.js";
 import { CyclesScreen } from "./screens/CyclesScreen.js";
+import { InitiativesScreen } from "./screens/InitiativesScreen.js";
 import { IssuesScreen } from "./screens/IssuesScreen.js";
-import type { TuiScreen } from "./state/types.js";
+import { ProjectsScreen } from "./screens/ProjectsScreen.js";
+import { TUI_SCREENS, type TuiScreen } from "./state/types.js";
 import type { TuiGateway } from "./types.js";
 
 interface AppProps {
@@ -25,9 +26,20 @@ export function App({
 }: AppProps) {
   const { exit } = useApp();
 
-  useInput((input) => {
+  useInput((input, key) => {
     if (input === "q") {
       exit();
+      return;
+    }
+
+    if (input === "\t" || key.tab || input === "\u001B[Z") {
+      const direction = key.shift || input === "\u001B[Z" ? -1 : 1;
+      const currentIndex = TUI_SCREENS.indexOf(screen);
+      const nextIndex = (currentIndex + direction + TUI_SCREENS.length) % TUI_SCREENS.length;
+      const [nextScreen] = TUI_SCREENS.slice(nextIndex, nextIndex + 1);
+      if (nextScreen) {
+        onSelectScreen(nextScreen);
+      }
       return;
     }
 
@@ -37,11 +49,16 @@ export function App({
     }
 
     if (input === "2") {
-      onSelectScreen("boards");
+      onSelectScreen("projects");
       return;
     }
 
     if (input === "3") {
+      onSelectScreen("initiatives");
+      return;
+    }
+
+    if (input === "4") {
       onSelectScreen("cycles");
       return;
     }
@@ -55,8 +72,10 @@ export function App({
     <Layout screen={screen}>
       {screen === "issues" ? (
         <IssuesScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
-      ) : screen === "boards" ? (
-        <BoardsScreen gateway={gateway} refreshToken={refreshToken} />
+      ) : screen === "projects" ? (
+        <ProjectsScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
+      ) : screen === "initiatives" ? (
+        <InitiativesScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
       ) : (
         <CyclesScreen gateway={gateway} refreshToken={refreshToken} />
       )}

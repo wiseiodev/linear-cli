@@ -12,7 +12,7 @@ Agent-first Linear CLI + TUI built with TypeScript, pnpm, Turborepo, the Linear 
 
 - `@wiseiodev/linear-core`: auth, config, token storage, SDK gateway, output envelope
 - `@wiseiodev/skills-catalog`: bundled skill registry + Vercel Skills CLI installer wrapper
-- `@wiseiodev/tui`: Ink React terminal UI for issues, boards, cycles
+- `@wiseiodev/tui`: Ink React terminal UI for issues, projects, initiatives, cycles
 - `@wiseiodev/linear-cli`: `linear` and `li` command binaries
 
 ## Install
@@ -59,7 +59,8 @@ linear projects list
 
 # TUI
 linear tui --screen issues
-linear tui --screen boards
+linear tui --screen projects
+linear tui --screen initiatives
 linear tui --screen cycles
 ```
 

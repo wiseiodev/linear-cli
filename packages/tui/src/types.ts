@@ -13,6 +13,17 @@ export interface ProjectViewModel {
   readonly name: string;
   readonly state: string;
   readonly progress: number;
+  readonly url: string;
+  readonly updatedAt: string;
+}
+
+export interface InitiativeViewModel {
+  readonly id: string;
+  readonly name: string;
+  readonly status: string;
+  readonly targetDate?: string;
+  readonly url: string;
+  readonly updatedAt: string;
 }
 
 export interface CycleViewModel {
@@ -37,6 +48,10 @@ export interface TuiGateway {
     readonly limit?: number;
     readonly cursor?: string | null;
   }): Promise<PageResult<ProjectViewModel>>;
+  listInitiatives(options: {
+    readonly limit?: number;
+    readonly cursor?: string | null;
+  }): Promise<PageResult<InitiativeViewModel>>;
   listCycles(options: {
     readonly limit?: number;
     readonly cursor?: string | null;

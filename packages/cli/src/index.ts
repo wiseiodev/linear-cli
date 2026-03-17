@@ -803,15 +803,20 @@ export function createProgram(authManager = new AuthManager()): Command {
   program
     .command("tui")
     .description("Open interactive terminal UI")
-    .option("--screen <name>", "issues | boards | cycles", "issues")
+    .option("--screen <name>", "issues | projects | initiatives | cycles", "issues")
     .action(async (opts, cmd) => {
       const globals = getGlobalOptions(cmd);
       try {
         const session = await authManager.openSession({ profile: globals.profile });
+        const defaultScreen =
+          opts.screen === "projects" ||
+          opts.screen === "initiatives" ||
+          opts.screen === "cycles"
+            ? opts.screen
+            : "issues";
         await runLinearTui({
           gateway: session.gateway,
-          defaultScreen:
-            opts.screen === "boards" || opts.screen === "cycles" ? opts.screen : "issues",
+          defaultScreen,
           openUrl: async (target) => {
             await open(target);
           },

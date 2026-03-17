@@ -48,6 +48,21 @@ function createStubGateway(): TuiGateway {
         nextCursor: null,
       };
     },
+    async listInitiatives() {
+      return {
+        items: [
+          {
+            id: "n_1",
+            name: "Initiative",
+            status: "active",
+            targetDate: "2024-02-01",
+            url: "https://linear.app/initiative/1",
+            updatedAt: "2024-01-01T00:00:00.000Z",
+          },
+        ],
+        nextCursor: null,
+      };
+    },
     async listCycles() {
       return {
         items: [
@@ -89,7 +104,7 @@ describe("App", () => {
     app.unmount();
   });
 
-  test("does not refetch boards on every render", async () => {
+  test("does not refetch projects on every render", async () => {
     const listProjects = vi.fn(async () => ({
       items: [
         {
@@ -112,7 +127,7 @@ describe("App", () => {
     const app = render(
       <App
         gateway={gateway}
-        screen="boards"
+        screen="projects"
         refreshToken={0}
         onRefresh={() => {}}
         onSelectScreen={() => {}}
@@ -123,6 +138,48 @@ describe("App", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(listProjects).toHaveBeenCalledTimes(1);
+    app.unmount();
+  });
+
+  test("advances to the next screen when pressing tab", async () => {
+    const onSelectScreen = vi.fn();
+    const app = render(
+      <App
+        gateway={createStubGateway()}
+        screen="issues"
+        refreshToken={0}
+        onRefresh={() => {}}
+        onSelectScreen={onSelectScreen}
+        openUrl={async () => {}}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    app.stdin.write("\t");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onSelectScreen).toHaveBeenCalledWith("projects");
+    app.unmount();
+  });
+
+  test("moves to the previous screen when pressing shift+tab", async () => {
+    const onSelectScreen = vi.fn();
+    const app = render(
+      <App
+        gateway={createStubGateway()}
+        screen="issues"
+        refreshToken={0}
+        onRefresh={() => {}}
+        onSelectScreen={onSelectScreen}
+        openUrl={async () => {}}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    app.stdin.write("\u001B[Z");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onSelectScreen).toHaveBeenCalledWith("cycles");
     app.unmount();
   });
 
