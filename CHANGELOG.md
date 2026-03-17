@@ -1,3 +1,12 @@
+# [1.0.0-alpha.4](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2026-03-17)
+
+
+### Features
+
+* **cli:** add guided auth and template-driven workflows ([70ab43b](https://github.com/wiseiodev/linear-cli/commit/70ab43bd149e1ca15b662e80ff6d186b44daf8ad))
+* **core:** add oauth session management and Linear entity support ([5206176](https://github.com/wiseiodev/linear-cli/commit/5206176ed4d1704dfbc7c306181f82925713ff81))
+* **tui:** improve issue browser interactions ([2a6365c](https://github.com/wiseiodev/linear-cli/commit/2a6365c02d00bb0deb1d4c1117737a001acaf4d9))
+
 # [1.0.0-alpha.3](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2026-03-16)
 
 
