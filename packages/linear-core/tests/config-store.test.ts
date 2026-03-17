@@ -12,9 +12,10 @@ describe("ConfigStore", () => {
 
     const config = await store.load();
 
-    expect(config.version).toBe(1);
+    expect(config.version).toBe(2);
     expect(config.defaultProfile).toBe("default");
     expect(config.profiles.default?.name).toBe("default");
+    expect(config.profiles.default?.preferredAuth).toBe("oauth");
   });
 
   test("upserts and retrieves profile", async () => {
@@ -41,9 +42,37 @@ describe("ConfigStore", () => {
       },
     });
 
-    expect(migrated.version).toBe(1);
+    expect(migrated.version).toBe(2);
     expect(migrated.defaultProfile).toBe("legacy");
     expect(migrated.profiles.legacy?.name).toBe("legacy");
     expect(migrated.profiles.legacy?.team).toBe("CORE");
+    expect(migrated.profiles.legacy?.preferredAuth).toBe("oauth");
+  });
+
+  test("preserves oauth profile configuration in version 2 config", () => {
+    const migrated = parseAppConfig({
+      version: 2,
+      defaultProfile: "agent",
+      profiles: {
+        agent: {
+          name: "agent",
+          team: "ENG",
+          preferredAuth: "oauth",
+          oauth: {
+            clientId: "client-1",
+            authorizeUrl: "https://linear.app/oauth/authorize",
+            tokenUrl: "https://api.linear.app/oauth/token",
+            redirectUri: "http://127.0.0.1:8787/oauth/callback",
+            scopes: ["read", "write"],
+            actor: "user",
+          },
+        },
+      },
+    });
+
+    expect(migrated.version).toBe(2);
+    expect(migrated.profiles.agent?.oauth?.clientId).toBe("client-1");
+    expect(migrated.profiles.agent?.oauth?.actor).toBe("user");
+    expect(migrated.profiles.agent?.oauth?.scopes).toEqual(["read", "write"]);
   });
 });

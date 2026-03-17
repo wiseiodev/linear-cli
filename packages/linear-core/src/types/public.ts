@@ -1,6 +1,7 @@
 export type LinearEntity =
   | "auth"
   | "issues"
+  | "initiatives"
   | "projects"
   | "cycles"
   | "teams"
@@ -9,12 +10,14 @@ export type LinearEntity =
   | "comments"
   | "attachments"
   | "states"
+  | "templates"
   | "skills"
   | "docs"
   | "tui";
 
 export type LinearAction =
   | "list"
+  | "browse"
   | "get"
   | "create"
   | "update"

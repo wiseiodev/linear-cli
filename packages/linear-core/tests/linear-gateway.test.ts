@@ -76,6 +76,36 @@ function createTestClient(): SdkLinearClient {
         success: true,
       };
     },
+    async initiatives() {
+      return {
+        nodes: [
+          {
+            id: "init_1",
+            name: "Agent Platform",
+            description: "Make agents useful",
+            status: "active",
+            targetDate: "2026-04-01",
+            url: "https://linear.app/initiative/agent-platform",
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "initiative-cursor-2",
+        },
+      };
+    },
+    async initiative() {
+      throw createNotImplementedError("initiative");
+    },
+    async createInitiative() {
+      throw createNotImplementedError("createInitiative");
+    },
+    async updateInitiative() {
+      throw createNotImplementedError("updateInitiative");
+    },
+    async deleteInitiative() {
+      throw createNotImplementedError("deleteInitiative");
+    },
     async teams() {
       throw createNotImplementedError("teams");
     },
@@ -154,6 +184,31 @@ function createTestClient(): SdkLinearClient {
     async archiveWorkflowState() {
       throw createNotImplementedError("archiveWorkflowState");
     },
+    templates: Promise.resolve([
+      {
+        id: "tpl_1",
+        name: "Bug Report",
+        description: "Track a bug",
+        type: "issue",
+        teamId: "team_1",
+        templateData: {
+          description: "Steps to reproduce",
+        },
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      },
+    ]),
+    async template() {
+      throw createNotImplementedError("template");
+    },
+    async createTemplate() {
+      throw createNotImplementedError("createTemplate");
+    },
+    async updateTemplate() {
+      throw createNotImplementedError("updateTemplate");
+    },
+    async deleteTemplate() {
+      throw createNotImplementedError("deleteTemplate");
+    },
   };
 }
 
@@ -174,5 +229,25 @@ describe("LinearGateway", () => {
 
     expect(result.success).toBe(true);
     expect(result.id).toBe("c_1");
+  });
+
+  test("lists initiatives and maps fields", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.listInitiatives({ limit: 10 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.name).toBe("Agent Platform");
+    expect(result.items[0]?.status).toBe("active");
+    expect(result.nextCursor).toBe("initiative-cursor-2");
+  });
+
+  test("lists templates and maps fields", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.listTemplates();
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe("Bug Report");
+    expect(result[0]?.type).toBe("issue");
+    expect(result[0]?.teamId).toBe("team_1");
   });
 });

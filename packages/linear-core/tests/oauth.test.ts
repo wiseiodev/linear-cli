@@ -3,6 +3,8 @@ import {
   buildAuthorizationUrl,
   exchangeAuthorizationCode,
   isTokenExpired,
+  parseManualAuthorizationInput,
+  parseOAuthCallback,
   refreshOAuthToken,
 } from "../src/auth/oauth.js";
 
@@ -15,6 +17,7 @@ describe("oauth", () => {
         tokenUrl: "https://api.linear.app/oauth/token",
         redirectUri: "http://localhost/callback",
         scopes: ["read", "write"],
+        actor: "user",
       },
       "state-1",
       "challenge-1",
@@ -24,6 +27,27 @@ describe("oauth", () => {
     expect(url).toContain("client_id=client-1");
     expect(url).toContain("state=state-1");
     expect(url).toContain("code_challenge=challenge-1");
+    expect(url).toContain("actor=user");
+  });
+
+  test("parses oauth callback and validates state", () => {
+    const parsed = parseOAuthCallback(
+      "http://127.0.0.1:8787/oauth/callback?code=code-1&state=state-1",
+      "state-1",
+    );
+
+    expect(parsed.code).toBe("code-1");
+  });
+
+  test("parses pasted callback url or raw code for manual login", () => {
+    const callback = parseManualAuthorizationInput(
+      "http://127.0.0.1:8787/oauth/callback?code=code-2&state=state-2",
+      "state-2",
+    );
+    const rawCode = parseManualAuthorizationInput("code-3", "state-2");
+
+    expect(callback.code).toBe("code-2");
+    expect(rawCode.code).toBe("code-3");
   });
 
   test("exchanges authorization code", async () => {

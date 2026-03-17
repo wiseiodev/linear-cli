@@ -4,10 +4,12 @@ import type {
   AttachmentRecord,
   CommentRecord,
   CycleRecord,
+  InitiativeRecord,
   IssueRecord,
   LabelRecord,
   ProjectRecord,
   TeamRecord,
+  TemplateRecord,
   UserRecord,
   WorkflowStateRecord,
 } from "./models.js";
@@ -20,6 +22,9 @@ import type {
   SdkCycleInput,
   SdkCycleLike,
   SdkCycleUpdateInput,
+  SdkInitiativeInput,
+  SdkInitiativeLike,
+  SdkInitiativeUpdateInput,
   SdkIssueInput,
   SdkIssueLabelInput,
   SdkIssueLabelLike,
@@ -33,6 +38,9 @@ import type {
   SdkTeamInput,
   SdkTeamLike,
   SdkTeamUpdateInput,
+  SdkTemplateInput,
+  SdkTemplateLike,
+  SdkTemplateUpdateInput,
   SdkUserLike,
   SdkUserUpdateInput,
   SdkWorkflowStateInput,
@@ -62,6 +70,18 @@ function toIssue(record: SdkIssueLike, stateName?: string): IssueRecord {
     projectId: record.projectId,
     url: record.url,
     createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
+function toInitiative(record: SdkInitiativeLike): InitiativeRecord {
+  return {
+    id: record.id,
+    name: record.name,
+    description: record.description ?? undefined,
+    status: record.status,
+    targetDate: record.targetDate ?? undefined,
+    url: record.url,
     updatedAt: toDateString(record.updatedAt),
   };
 }
@@ -150,6 +170,18 @@ function toWorkflowState(record: SdkWorkflowStateLike): WorkflowStateRecord {
   };
 }
 
+function toTemplate(record: SdkTemplateLike): TemplateRecord {
+  return {
+    id: record.id,
+    name: record.name,
+    description: record.description ?? undefined,
+    type: record.type,
+    teamId: record.teamId,
+    templateData: record.templateData,
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
 function toListVariables(options: ListOptions): { first: number; after?: string | null } {
   const base = {
     first: options.limit ?? 50,
@@ -212,6 +244,41 @@ export class LinearGateway {
     id: string,
   ): Promise<{ readonly id?: string; readonly success: boolean }> {
     const payload = await this.client.deleteIssue(id);
+    return {
+      id: payload.entityId,
+      success: payload.success,
+    };
+  }
+
+  public async listInitiatives(options: ListOptions): Promise<PageResult<InitiativeRecord>> {
+    const connection = await this.client.initiatives(toListVariables(options));
+    return {
+      items: connection.nodes.map(toInitiative),
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getInitiative(id: string): Promise<InitiativeRecord> {
+    return toInitiative(await this.client.initiative(id));
+  }
+
+  public async createInitiative(input: SdkInitiativeInput): Promise<InitiativeRecord> {
+    const payload = await this.client.createInitiative(input);
+    return toInitiative(await requireEntity(payload.initiative, "initiative"));
+  }
+
+  public async updateInitiative(
+    id: string,
+    input: SdkInitiativeUpdateInput,
+  ): Promise<InitiativeRecord> {
+    const payload = await this.client.updateInitiative(id, input);
+    return toInitiative(await requireEntity(payload.initiative, "initiative"));
+  }
+
+  public async deleteInitiative(
+    id: string,
+  ): Promise<{ readonly id?: string; readonly success: boolean }> {
+    const payload = await this.client.deleteInitiative(id);
     return {
       id: payload.entityId,
       success: payload.success,
@@ -435,6 +502,35 @@ export class LinearGateway {
     id: string,
   ): Promise<{ readonly id?: string; readonly success: boolean }> {
     const payload = await this.client.archiveWorkflowState(id);
+    return {
+      id: payload.entityId,
+      success: payload.success,
+    };
+  }
+
+  public async listTemplates(): Promise<TemplateRecord[]> {
+    const templates = await this.client.templates;
+    return templates.map(toTemplate);
+  }
+
+  public async getTemplate(id: string): Promise<TemplateRecord> {
+    return toTemplate(await this.client.template(id));
+  }
+
+  public async createTemplate(input: SdkTemplateInput): Promise<TemplateRecord> {
+    const payload = await this.client.createTemplate(input);
+    return toTemplate(await requireEntity(payload.template, "template"));
+  }
+
+  public async updateTemplate(id: string, input: SdkTemplateUpdateInput): Promise<TemplateRecord> {
+    const payload = await this.client.updateTemplate(id, input);
+    return toTemplate(await requireEntity(payload.template, "template"));
+  }
+
+  public async deleteTemplate(
+    id: string,
+  ): Promise<{ readonly id?: string; readonly success: boolean }> {
+    const payload = await this.client.deleteTemplate(id);
     return {
       id: payload.entityId,
       success: payload.success,

@@ -42,11 +42,15 @@ export class ConfigStore {
 
   public async upsertProfile(profile: ProfileConfig): Promise<AppConfig> {
     const current = await this.load();
+    const previous = current.profiles[profile.name];
     const next: AppConfig = {
       ...current,
       profiles: {
         ...current.profiles,
-        [profile.name]: profile,
+        [profile.name]: {
+          ...previous,
+          ...profile,
+        },
       },
     };
 
@@ -56,6 +60,21 @@ export class ConfigStore {
 
     await this.save(next);
     return next;
+  }
+
+  public async mergeProfile(
+    profileName: string,
+    update: Omit<Partial<ProfileConfig>, "name">,
+  ): Promise<AppConfig> {
+    const current = await this.load();
+    const nextProfile: ProfileConfig = {
+      name: profileName,
+      preferredAuth: "oauth",
+      ...current.profiles[profileName],
+      ...update,
+    };
+
+    return this.upsertProfile(nextProfile);
   }
 
   public async setDefaultProfile(name: string): Promise<AppConfig> {

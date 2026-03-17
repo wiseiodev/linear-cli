@@ -1,5 +1,6 @@
 import { LinearClient } from "@linear/sdk";
 import { ConfigStore } from "../config/config-store.js";
+import type { OAuthProfileConfig } from "../config/schema.js";
 import { LinearGateway } from "../entities/linear-gateway.js";
 import { LinearCoreError } from "../errors/core-error.js";
 import { createCredentialStore } from "../token-store/composite-store.js";
@@ -13,10 +14,15 @@ import {
 
 export interface AuthStatus {
   readonly profile: string;
+  readonly method?: "oauth" | "api-key";
   readonly hasApiKey: boolean;
   readonly hasAccessToken: boolean;
+  readonly oauthConfigured: boolean;
   readonly hasRefreshToken: boolean;
   readonly expiresAt?: string;
+  readonly expired: boolean;
+  readonly scopes?: readonly string[];
+  readonly redirectUri?: string;
 }
 
 export interface AuthLoginWithTokenInput {
@@ -77,18 +83,45 @@ export class AuthManager {
     return this.credentialStorePromise;
   }
 
+  public async getOAuthConfig(profile: string): Promise<OAuthProfileConfig | undefined> {
+    try {
+      const selectedProfile = await this.configStore.getProfile(profile);
+      return selectedProfile.oauth;
+    } catch (error) {
+      if (error instanceof LinearCoreError && error.code === "CONFIG_NOT_FOUND") {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
+  public async saveOAuthConfig(profile: string, oauth: OAuthProfileConfig): Promise<void> {
+    await this.configStore.mergeProfile(profile, {
+      oauth,
+      preferredAuth: "oauth",
+    });
+  }
+
   public async loginWithApiKey(input: AuthLoginWithApiKeyInput): Promise<void> {
-    await this.configStore.upsertProfile({ name: input.profile });
+    await this.configStore.mergeProfile(input.profile, {
+      preferredAuth: "api-key",
+    });
     const store = await this.credentialsStore();
+    const existing = await store.get(input.profile);
     await store.set(input.profile, {
+      ...existing,
       apiKey: input.apiKey,
     });
   }
 
   public async loginWithToken(input: AuthLoginWithTokenInput): Promise<void> {
-    await this.configStore.upsertProfile({ name: input.profile });
+    await this.configStore.mergeProfile(input.profile, {
+      preferredAuth: "oauth",
+    });
     const store = await this.credentialsStore();
+    const existing = await store.get(input.profile);
     await store.set(input.profile, {
+      ...existing,
       accessToken: input.accessToken,
       refreshToken: input.refreshToken,
       expiresAt: input.expiresAt,
@@ -148,87 +181,107 @@ export class AuthManager {
   public async status(profile?: string): Promise<AuthStatus> {
     const config = await this.configStore.load();
     const selectedProfile = profile ?? config.defaultProfile;
+    const selected = config.profiles[selectedProfile];
     const store = await this.credentialsStore();
     const credentials = await store.get(selectedProfile);
+    const hasAccessToken = typeof credentials?.accessToken === "string";
+    const hasStoredApiKey = typeof credentials?.apiKey === "string";
+    const hasEnvApiKey = typeof process.env.LINEAR_API_KEY === "string";
+    const hasApiKey = hasStoredApiKey || hasEnvApiKey;
+    const expiresAt = credentials?.expiresAt;
 
     return {
       profile: selectedProfile,
-      hasApiKey: typeof credentials?.apiKey === "string",
-      hasAccessToken: typeof credentials?.accessToken === "string",
+      method: hasAccessToken ? "oauth" : hasApiKey ? "api-key" : undefined,
+      hasApiKey,
+      hasAccessToken,
+      oauthConfigured: selected?.oauth !== undefined,
       hasRefreshToken: typeof credentials?.refreshToken === "string",
-      expiresAt: credentials?.expiresAt,
+      expiresAt,
+      expired:
+        hasAccessToken &&
+        isTokenExpired({
+          accessToken: credentials.accessToken ?? "",
+          refreshToken: credentials.refreshToken,
+          expiresAt,
+        }),
+      scopes: selected?.oauth?.scopes,
+      redirectUri: selected?.oauth?.redirectUri,
     };
   }
 
-  public async openSession(options?: {
-    readonly profile?: string;
-    readonly tokenUrl?: string;
-    readonly clientId?: string;
-  }): Promise<ActiveSession> {
+  public async openSession(options?: { readonly profile?: string }): Promise<ActiveSession> {
     const config = await this.configStore.load();
     const selectedProfile = options?.profile ?? config.defaultProfile;
+    const selected = config.profiles[selectedProfile];
     const store = await this.credentialsStore();
     const credentials = await store.get(selectedProfile);
+    const oauthConfig = selected?.oauth;
 
-    const envApiKey = process.env.LINEAR_API_KEY;
+    if (credentials?.accessToken) {
+      let token: OAuthToken = {
+        accessToken: credentials.accessToken,
+        refreshToken: credentials.refreshToken,
+        expiresAt: credentials.expiresAt,
+      };
 
-    if (credentials?.apiKey || envApiKey) {
-      const apiKey = credentials?.apiKey ?? envApiKey;
-      if (!apiKey) {
-        throw new LinearCoreError("AUTH_REQUIRED", "Missing API key");
+      if (isTokenExpired(token) && token.refreshToken && oauthConfig) {
+        const refreshed = await refreshOAuthToken(fetch, {
+          clientId: oauthConfig.clientId,
+          tokenUrl: oauthConfig.tokenUrl,
+          refreshToken: token.refreshToken,
+        });
+        token = refreshed;
+        await store.set(selectedProfile, {
+          ...credentials,
+          ...toStoredCredentials(refreshed),
+        });
       }
 
-      const client = new LinearClient({ apiKey });
+      const client = new LinearClient({
+        accessToken: token.accessToken,
+      });
+
       return {
         profile: selectedProfile,
         client,
         gateway: new LinearGateway(client),
         credentials: {
-          apiKey,
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: token.expiresAt,
         },
       };
     }
 
-    if (!credentials?.accessToken) {
-      throw new LinearCoreError(
-        "AUTH_REQUIRED",
-        `No credentials found for profile ${selectedProfile}. Use auth login first.`,
-      );
+    if (credentials?.apiKey) {
+      const client = new LinearClient({ apiKey: credentials.apiKey });
+      return {
+        profile: selectedProfile,
+        client,
+        gateway: new LinearGateway(client),
+        credentials: {
+          apiKey: credentials.apiKey,
+        },
+      };
     }
 
-    let token: OAuthToken = {
-      accessToken: credentials.accessToken,
-      refreshToken: credentials.refreshToken,
-      expiresAt: credentials.expiresAt,
-    };
-
-    const shouldRefresh = isTokenExpired(token);
-    if (shouldRefresh && token.refreshToken && options?.tokenUrl && options?.clientId) {
-      const refreshed = await refreshOAuthToken(fetch, {
-        clientId: options.clientId,
-        tokenUrl: options.tokenUrl,
-        refreshToken: token.refreshToken,
-      });
-      token = refreshed;
-      await store.set(selectedProfile, {
-        ...credentials,
-        ...toStoredCredentials(refreshed),
-      });
+    const envApiKey = process.env.LINEAR_API_KEY;
+    if (envApiKey) {
+      const client = new LinearClient({ apiKey: envApiKey });
+      return {
+        profile: selectedProfile,
+        client,
+        gateway: new LinearGateway(client),
+        credentials: {
+          apiKey: envApiKey,
+        },
+      };
     }
 
-    const client = new LinearClient({
-      accessToken: token.accessToken,
-    });
-
-    return {
-      profile: selectedProfile,
-      client,
-      gateway: new LinearGateway(client),
-      credentials: {
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-        expiresAt: token.expiresAt,
-      },
-    };
+    throw new LinearCoreError(
+      "AUTH_REQUIRED",
+      `No credentials found for profile ${selectedProfile}. Use auth login first.`,
+    );
   }
 }

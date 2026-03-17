@@ -1,4 +1,5 @@
-import { URLSearchParams } from "node:url";
+import { randomBytes } from "node:crypto";
+import { URL, URLSearchParams } from "node:url";
 import { z } from "zod";
 import { LinearCoreError } from "../errors/core-error.js";
 
@@ -8,6 +9,7 @@ export interface OAuthClientConfig {
   readonly tokenUrl: string;
   readonly redirectUri: string;
   readonly scopes: readonly string[];
+  readonly actor: "user";
 }
 
 export interface OAuthToken {
@@ -15,6 +17,10 @@ export interface OAuthToken {
   readonly refreshToken?: string;
   readonly expiresAt?: string;
   readonly tokenType?: string;
+}
+
+export interface ParsedAuthorizationCode {
+  readonly code: string;
 }
 
 interface TokenExchangeInput {
@@ -57,6 +63,21 @@ function buildTokenPayload(parsed: z.infer<typeof tokenResponseSchema>): OAuthTo
   };
 }
 
+function parseCallbackFromUrl(input: string): URL {
+  try {
+    return new URL(input);
+  } catch {
+    throw new LinearCoreError(
+      "TOKEN_EXCHANGE_FAILED",
+      "Expected a callback URL or authorization code.",
+    );
+  }
+}
+
+export function createOAuthState(): string {
+  return randomBytes(24).toString("hex");
+}
+
 export function buildAuthorizationUrl(
   config: OAuthClientConfig,
   state: string,
@@ -67,12 +88,54 @@ export function buildAuthorizationUrl(
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
     scope: config.scopes.join(" "),
+    actor: config.actor,
     state,
     code_challenge_method: "S256",
     code_challenge: codeChallenge,
   });
 
   return `${config.authorizeUrl}?${query.toString()}`;
+}
+
+export function parseOAuthCallback(
+  callbackUrl: string,
+  expectedState: string,
+): ParsedAuthorizationCode {
+  const url = parseCallbackFromUrl(callbackUrl);
+  const error = url.searchParams.get("error");
+  if (error) {
+    throw new LinearCoreError("TOKEN_EXCHANGE_FAILED", `OAuth login failed: ${error}`);
+  }
+
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+
+  if (!code) {
+    throw new LinearCoreError("TOKEN_EXCHANGE_FAILED", "OAuth callback did not include a code.");
+  }
+
+  if (state !== expectedState) {
+    throw new LinearCoreError("TOKEN_EXCHANGE_FAILED", "OAuth callback state did not match.");
+  }
+
+  return { code };
+}
+
+export function parseManualAuthorizationInput(
+  input: string,
+  expectedState: string,
+): ParsedAuthorizationCode {
+  const trimmed = input.trim();
+
+  if (trimmed.includes("://")) {
+    return parseOAuthCallback(trimmed, expectedState);
+  }
+
+  if (!trimmed) {
+    throw new LinearCoreError("TOKEN_EXCHANGE_FAILED", "Authorization code cannot be empty.");
+  }
+
+  return { code: trimmed };
 }
 
 async function parseTokenResponse(response: Response): Promise<OAuthToken> {

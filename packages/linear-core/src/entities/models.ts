@@ -21,6 +21,16 @@ export interface ProjectRecord {
   readonly updatedAt: string;
 }
 
+export interface InitiativeRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly status: string;
+  readonly targetDate?: string;
+  readonly url: string;
+  readonly updatedAt: string;
+}
+
 export interface CycleRecord {
   readonly id: string;
   readonly number: number;
@@ -77,4 +87,14 @@ export interface WorkflowStateRecord {
   readonly type: string;
   readonly color?: string;
   readonly teamId?: string;
+}
+
+export interface TemplateRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly type: string;
+  readonly teamId?: string;
+  readonly templateData: Readonly<Record<string, unknown>>;
+  readonly updatedAt: string;
 }
