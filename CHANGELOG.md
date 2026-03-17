@@ -1,3 +1,10 @@
+# [1.0.0-alpha.5](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2026-03-17)
+
+
+### Features
+
+* **tui:** add projects and initiatives browse tabs ([0f3efe6](https://github.com/wiseiodev/linear-cli/commit/0f3efe6b771d912ad55ece62a923b32499458188))
+
 # [1.0.0-alpha.4](https://github.com/wiseiodev/linear-cli/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2026-03-17)
 
 

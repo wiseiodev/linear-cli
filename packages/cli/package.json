@@ -1,6 +1,6 @@
 {
   "name": "@wiseiodev/linear-cli",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "type": "module",
   "bin": {
     "linear": "dist/bin/linear.js",
