@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/wiseiodev/linear-cli/compare/v1.2.0...v1.3.0) (2026-03-18)
+
+
+### Features
+
+* **core:** return descriptions for issue project and document commands ([8e7a420](https://github.com/wiseiodev/linear-cli/commit/8e7a4209266f50af274d88bae959079d01e55da5))
+
 # [1.3.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.2.0...v1.3.0-alpha.1) (2026-03-18)
 
 
