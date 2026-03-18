@@ -26,6 +26,15 @@ export interface InitiativeViewModel {
   readonly updatedAt: string;
 }
 
+export interface DocumentViewModel {
+  readonly id: string;
+  readonly title: string;
+  readonly url: string;
+  readonly projectId?: string;
+  readonly initiativeId?: string;
+  readonly updatedAt: string;
+}
+
 export interface CycleViewModel {
   readonly id: string;
   readonly number: number;
@@ -52,6 +61,10 @@ export interface TuiGateway {
     readonly limit?: number;
     readonly cursor?: string | null;
   }): Promise<PageResult<InitiativeViewModel>>;
+  listDocuments(options: {
+    readonly limit?: number;
+    readonly cursor?: string | null;
+  }): Promise<PageResult<DocumentViewModel>>;
   listCycles(options: {
     readonly limit?: number;
     readonly cursor?: string | null;

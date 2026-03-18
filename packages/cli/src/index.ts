@@ -844,13 +844,16 @@ export function createProgram(authManager = new AuthManager()): Command {
   program
     .command("tui")
     .description("Open interactive terminal UI")
-    .option("--screen <name>", "issues | projects | initiatives | cycles", "issues")
+    .option("--screen <name>", "issues | projects | initiatives | documents | cycles", "issues")
     .action(async (opts, cmd) => {
       const globals = getGlobalOptions(cmd);
       try {
         const session = await authManager.openSession({ profile: globals.profile });
         const defaultScreen =
-          opts.screen === "projects" || opts.screen === "initiatives" || opts.screen === "cycles"
+          opts.screen === "projects" ||
+          opts.screen === "initiatives" ||
+          opts.screen === "documents" ||
+          opts.screen === "cycles"
             ? opts.screen
             : "issues";
         await runLinearTui({

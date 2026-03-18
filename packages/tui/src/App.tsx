@@ -1,6 +1,7 @@
 import { useApp, useInput } from "ink";
 import { Layout } from "./components/Layout.js";
 import { CyclesScreen } from "./screens/CyclesScreen.js";
+import { DocumentsScreen } from "./screens/DocumentsScreen.js";
 import { InitiativesScreen } from "./screens/InitiativesScreen.js";
 import { IssuesScreen } from "./screens/IssuesScreen.js";
 import { ProjectsScreen } from "./screens/ProjectsScreen.js";
@@ -59,6 +60,11 @@ export function App({
     }
 
     if (input === "4") {
+      onSelectScreen("documents");
+      return;
+    }
+
+    if (input === "5") {
       onSelectScreen("cycles");
       return;
     }
@@ -76,6 +82,8 @@ export function App({
         <ProjectsScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
       ) : screen === "initiatives" ? (
         <InitiativesScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
+      ) : screen === "documents" ? (
+        <DocumentsScreen gateway={gateway} refreshToken={refreshToken} openUrl={openUrl} />
       ) : (
         <CyclesScreen gateway={gateway} refreshToken={refreshToken} />
       )}

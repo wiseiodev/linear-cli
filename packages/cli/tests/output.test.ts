@@ -43,4 +43,45 @@ describe("renderEnvelope", () => {
     expect(logSpy).toHaveBeenCalledWith("issues.list");
     expect(logSpy).toHaveBeenCalledWith("Next cursor: cursor-2");
   });
+
+  test("prints documents page items in a compact table", () => {
+    const tableSpy = vi.spyOn(console, "table").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    renderEnvelope(
+      successEnvelope("documents", "list", {
+        items: [
+          {
+            id: "6fce2701-2293-43a1-8399-e1fec1cfe461",
+            title: "Migrate Legacy -> App: Initiative Research & Steps",
+            content: "# Heading\nA".repeat(400),
+            url: "https://linear.app/annyai/document/migrate-legacy-app-initiative-research-and-steps-bf5d834194ea",
+            projectId: null,
+            initiativeId: "06ef175e-a520-491a-bd1e-0fdbf4a350c8",
+            updatedAt: "2026-03-17T13:22:54.553Z",
+          },
+        ],
+        nextCursor: "cursor-docs",
+      }),
+      {
+        json: false,
+        quiet: false,
+      },
+    );
+
+    const [rows] = tableSpy.mock.calls[0] ?? [];
+    expect(Array.isArray(rows)).toBe(true);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      key: "6fce2701",
+      title: "Migrate Legacy -> App: Initiative Research & Steps",
+      scope: "i:06ef175e",
+      content: "4400 chars",
+      updated: "2026-03-17 13:22",
+    });
+    expect(typeof rows[0]?.url).toBe("string");
+    expect(rows[0]?.url.endsWith("\u2026")).toBe(true);
+    expect(logSpy).toHaveBeenCalledWith("documents.list");
+    expect(logSpy).toHaveBeenCalledWith("Next cursor: cursor-docs");
+  });
 });

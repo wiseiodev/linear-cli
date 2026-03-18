@@ -63,6 +63,20 @@ function createStubGateway(): TuiGateway {
         nextCursor: null,
       };
     },
+    async listDocuments() {
+      return {
+        items: [
+          {
+            id: "d_1",
+            title: "Document",
+            url: "https://linear.app/document/1",
+            initiativeId: "init_1",
+            updatedAt: "2024-01-01T00:00:00.000Z",
+          },
+        ],
+        nextCursor: null,
+      };
+    },
     async listCycles() {
       return {
         items: [
@@ -180,6 +194,27 @@ describe("App", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(onSelectScreen).toHaveBeenCalledWith("cycles");
+    app.unmount();
+  });
+
+  test("moves to documents when pressing 4", async () => {
+    const onSelectScreen = vi.fn();
+    const app = render(
+      <App
+        gateway={createStubGateway()}
+        screen="issues"
+        refreshToken={0}
+        onRefresh={() => {}}
+        onSelectScreen={onSelectScreen}
+        openUrl={async () => {}}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    app.stdin.write("4");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onSelectScreen).toHaveBeenCalledWith("documents");
     app.unmount();
   });
 
