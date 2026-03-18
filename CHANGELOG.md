@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/wiseiodev/linear-cli/compare/v1.1.1...v1.2.0) (2026-03-18)
+
+
+### Features
+
+* **cli:** add issue branch lookup by id or identifier ([9f2c7b3](https://github.com/wiseiodev/linear-cli/commit/9f2c7b3fcb0b316d8679ff508a36525b1219ce9e))
+
 # [1.2.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.1.1...v1.2.0-alpha.1) (2026-03-18)
 
 
