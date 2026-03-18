@@ -84,4 +84,36 @@ describe("renderEnvelope", () => {
     expect(logSpy).toHaveBeenCalledWith("documents.list");
     expect(logSpy).toHaveBeenCalledWith("Next cursor: cursor-docs");
   });
+
+  test("does not render issue detail payload with document formatting", () => {
+    const tableSpy = vi.spyOn(console, "table").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    renderEnvelope(
+      successEnvelope("issues", "get", {
+        id: "i_1",
+        identifier: "ANN-123",
+        title: "Issue title",
+        priority: 2,
+        stateName: "Todo",
+        updatedAt: "2026-03-18T00:00:00.000Z",
+        url: "https://linear.app/annyai/issue/ANN-123/issue-title",
+      }),
+      {
+        json: false,
+        quiet: false,
+      },
+    );
+
+    const [rows] = tableSpy.mock.calls[0] ?? [];
+    expect(Array.isArray(rows)).toBe(true);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      identifier: "ANN-123",
+      title: "Issue title",
+      priority: 2,
+    });
+    expect(rows[0]?.key).toBeUndefined();
+    expect(logSpy).toHaveBeenCalledWith("issues.get");
+  });
 });

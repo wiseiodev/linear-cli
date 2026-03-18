@@ -46,7 +46,10 @@ function isDocumentLike(value: unknown): value is {
     typeof value.id === "string" &&
     typeof value.title === "string" &&
     typeof value.url === "string" &&
-    typeof value.updatedAt === "string"
+    typeof value.updatedAt === "string" &&
+    !("identifier" in value) &&
+    !("priority" in value) &&
+    ("content" in value || "projectId" in value || "initiativeId" in value)
   );
 }
 

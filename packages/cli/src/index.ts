@@ -465,6 +465,30 @@ export function createProgram(authManager = new AuthManager()): Command {
     ?.option("--template <id-or-name>", "Apply a template by exact id or exact name");
 
   issuesCommand
+    ?.command("branch")
+    .description("Show branch name for an issue id or identifier")
+    .argument("<id-or-identifier>", "Issue id (UUID) or identifier (e.g. ANN-123)")
+    .action(async (idOrIdentifier, _, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      try {
+        const data = await (await sessionGateway(cmd)).getIssueBranchName(idOrIdentifier);
+        renderEnvelope(successEnvelope("issues", "show", data), globals);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("issues", "show", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  issuesCommand
     ?.command("browse")
     .description("Browse issues in the interactive terminal table")
     .action(async (_, cmd) => {

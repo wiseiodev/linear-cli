@@ -68,6 +68,7 @@ function toIssue(record: SdkIssueLike, stateName?: string): IssueRecord {
     id: record.id,
     identifier: record.identifier,
     title: record.title,
+    branchName: record.branchName ?? undefined,
     priority: record.priority,
     stateName,
     teamId: record.teamId,
@@ -241,6 +242,21 @@ export class LinearGateway {
     const issue = await this.client.issue(id);
     const state = issue.state ? await issue.state : undefined;
     return toIssue(issue, state?.name);
+  }
+
+  public async getIssueBranchName(idOrIdentifier: string): Promise<{
+    readonly id: string;
+    readonly identifier: string;
+    readonly branchName: string;
+    readonly url: string;
+  }> {
+    const issue = await this.client.issue(idOrIdentifier);
+    return {
+      id: issue.id,
+      identifier: issue.identifier,
+      branchName: issue.branchName,
+      url: issue.url,
+    };
   }
 
   public async createIssue(input: SdkIssueInput): Promise<IssueRecord> {

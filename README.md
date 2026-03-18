@@ -53,6 +53,7 @@ linear skills install issue-triage
 
 # CRUD
 linear issues list --limit 10
+linear issues branch ANN-123
 linear issues browse
 linear issues create --input '{"title":"Investigate bug","teamId":"<team-id>"}'
 linear projects list

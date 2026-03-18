@@ -7,6 +7,7 @@ Examples:
   linear auth status --json
   linear auth api-key-set --api-key "$LINEAR_API_KEY"
   linear issues list --limit 10
+  linear issues branch ANN-123
   linear issues browse
   linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}'
   linear initiatives list

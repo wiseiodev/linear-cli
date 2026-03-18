@@ -15,6 +15,7 @@ function createTestClient(): SdkLinearClient {
             id: "i_1",
             identifier: "ENG-1",
             title: "Fix parser",
+            branchName: "eng-1-fix-parser",
             priority: 2,
             url: "https://linear.app/issue/ENG-1",
             createdAt: new Date("2024-01-01T00:00:00.000Z"),
@@ -32,7 +33,23 @@ function createTestClient(): SdkLinearClient {
       };
     },
     async issue() {
-      throw createNotImplementedError("issue");
+      return {
+        id: "i_1",
+        identifier: "ENG-1",
+        title: "Fix parser",
+        branchName: "eng-1-fix-parser",
+        priority: 2,
+        teamId: "team_1",
+        projectId: "project_1",
+        url: "https://linear.app/issue/ENG-1",
+        createdAt: new Date("2024-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+        state: Promise.resolve({
+          id: "s_1",
+          name: "In Progress",
+          type: "started",
+        }),
+      };
     },
     async createIssue() {
       throw createNotImplementedError("createIssue");
@@ -250,8 +267,17 @@ describe("LinearGateway", () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.identifier).toBe("ENG-1");
+    expect(result.items[0]?.branchName).toBe("eng-1-fix-parser");
     expect(result.items[0]?.stateName).toBe("In Progress");
     expect(result.nextCursor).toBe("cursor-2");
+  });
+
+  test("gets issue branch name by identifier", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getIssueBranchName("ENG-1");
+
+    expect(result.identifier).toBe("ENG-1");
+    expect(result.branchName).toBe("eng-1-fix-parser");
   });
 
   test("archives cycle via delete operation", async () => {

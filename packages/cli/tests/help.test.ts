@@ -21,6 +21,7 @@ describe("help output", () => {
     expect(help).toContain("initiatives");
     expect(help).toContain("documents");
     expect(help).toContain("templates");
+    expect(issuesHelp).toContain("branch");
     expect(issuesHelp).toContain("browse");
     expect(initiativesHelp).toContain("create");
     expect(documentsHelp).toContain("list");

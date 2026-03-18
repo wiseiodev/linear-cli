@@ -2,6 +2,7 @@ export interface IssueRecord {
   readonly id: string;
   readonly identifier: string;
   readonly title: string;
+  readonly branchName?: string;
   readonly priority: number;
   readonly stateName?: string;
   readonly teamId?: string;
