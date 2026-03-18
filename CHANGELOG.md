@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/wiseiodev/linear-cli/compare/v1.0.0...v1.1.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* **ci:** enforce verify before prerelease and production release ([4c09ecd](https://github.com/wiseiodev/linear-cli/commit/4c09ecd25d7ac9bcfb17d433aba592dce8c381ea))
+* **scripts:** run verify with biome write mode ([1a8d1ef](https://github.com/wiseiodev/linear-cli/commit/1a8d1ef156b2a4347a02bc27271522ae344a994f))
+
+
+### Features
+
+* **cli:** add Linear documents CRUD support ([9b339d1](https://github.com/wiseiodev/linear-cli/commit/9b339d17b5c7e2058189bbe416defc19869165a7))
+
 # [1.1.0-alpha.2](https://github.com/wiseiodev/linear-cli/compare/v1.1.0-alpha.1...v1.1.0-alpha.2) (2026-03-18)
 
 
