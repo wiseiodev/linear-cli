@@ -16,7 +16,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:watch": "vitest --config vitest.workspace.ts",
-    "verify": "pnpm check && pnpm typecheck && pnpm test",
+    "verify": "pnpm check:write && pnpm typecheck && pnpm test",
     "release:pre": "semantic-release --extends ./.releaserc.prerelease.cjs",
     "release:prod": "semantic-release --extends ./.releaserc.release.cjs"
   },
