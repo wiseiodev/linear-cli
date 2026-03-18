@@ -1,3 +1,10 @@
+# [1.1.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.0.0...v1.1.0-alpha.1) (2026-03-18)
+
+
+### Features
+
+* **cli:** add Linear documents CRUD support ([9b339d1](https://github.com/wiseiodev/linear-cli/commit/9b339d17b5c7e2058189bbe416defc19869165a7))
+
 # 1.0.0 (2026-03-17)
 
 
