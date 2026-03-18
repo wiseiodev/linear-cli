@@ -13,8 +13,8 @@ export function Layout({ screen, children }: PropsWithChildren<LayoutProps>) {
         Linear TUI
       </Text>
       <Text color="gray">
-        Screens: [1] Issues [2] Projects [3] Initiatives [4] Cycles | [tab/shift+tab] switch |
-        [j/k] move | [n/p] page | [o] open selected | [r] refresh | [q] quit
+        Screens: [1] Issues [2] Projects [3] Initiatives [4] Cycles | [tab/shift+tab] switch | [j/k]
+        move | [n/p] page | [o] open selected | [r] refresh | [q] quit
       </Text>
       <Text>
         Active: <Text color="green">{screen}</Text>
