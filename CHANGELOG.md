@@ -1,3 +1,10 @@
+## [1.1.1-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.1.0...v1.1.1-alpha.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* **tui:** add documents browse screen and improve docs list output ([f8943c0](https://github.com/wiseiodev/linear-cli/commit/f8943c044e32f9f16101eba3d9fa9e25c7992891))
+
 # [1.1.0](https://github.com/wiseiodev/linear-cli/compare/v1.0.0...v1.1.0) (2026-03-18)
 
 
