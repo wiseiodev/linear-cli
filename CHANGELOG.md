@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/wiseiodev/linear-cli/compare/v1.3.0...v1.4.0) (2026-03-18)
+
+
+### Features
+
+* **cli:** close sdk parity gaps across entities and commands ([20c5bd3](https://github.com/wiseiodev/linear-cli/commit/20c5bd32c562e88b4c63a39070185700eb3e5825))
+
 # [1.4.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.3.0...v1.4.0-alpha.1) (2026-03-18)
 
 
