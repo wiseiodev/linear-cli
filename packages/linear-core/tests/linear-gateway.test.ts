@@ -37,6 +37,7 @@ function createTestClient(): SdkLinearClient {
         id: "i_1",
         identifier: "ENG-1",
         title: "Fix parser",
+        description: "Parser crashes when a trailing comma is present.",
         branchName: "eng-1-fix-parser",
         priority: 2,
         teamId: "team_1",
@@ -61,10 +62,35 @@ function createTestClient(): SdkLinearClient {
       throw createNotImplementedError("deleteIssue");
     },
     async projects() {
-      throw createNotImplementedError("projects");
+      return {
+        nodes: [
+          {
+            id: "project_1",
+            name: "Agent Runtime",
+            description: "Core runtime improvements.",
+            state: "active",
+            priority: 2,
+            progress: 0.42,
+            url: "https://linear.app/project/agent-runtime",
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "project-cursor-2",
+        },
+      };
     },
     async project() {
-      throw createNotImplementedError("project");
+      return {
+        id: "project_1",
+        name: "Agent Runtime",
+        description: "Core runtime improvements.",
+        state: "active",
+        priority: 2,
+        progress: 0.42,
+        url: "https://linear.app/project/agent-runtime",
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      };
     },
     async createProject() {
       throw createNotImplementedError("createProject");
@@ -95,7 +121,16 @@ function createTestClient(): SdkLinearClient {
       };
     },
     async document() {
-      throw createNotImplementedError("document");
+      return {
+        id: "doc_1",
+        title: "Agent rollout plan",
+        content: "## Scope",
+        url: "https://linear.app/docs/agent-rollout-plan",
+        projectId: "proj_1",
+        initiativeId: "init_1",
+        createdAt: new Date("2026-03-15T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      };
     },
     async createDocument() {
       throw createNotImplementedError("createDocument");
@@ -280,6 +315,15 @@ describe("LinearGateway", () => {
     expect(result.branchName).toBe("eng-1-fix-parser");
   });
 
+  test("gets issue details including description", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getIssue("ENG-1");
+
+    expect(result.identifier).toBe("ENG-1");
+    expect(result.description).toBe("Parser crashes when a trailing comma is present.");
+    expect(result.stateName).toBe("In Progress");
+  });
+
   test("archives cycle via delete operation", async () => {
     const gateway = new LinearGateway(createTestClient());
     const result = await gateway.deleteCycle("c_1");
@@ -298,15 +342,42 @@ describe("LinearGateway", () => {
     expect(result.nextCursor).toBe("initiative-cursor-2");
   });
 
+  test("lists projects and maps fields", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.listProjects({ limit: 10 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.name).toBe("Agent Runtime");
+    expect(result.items[0]?.description).toBe("Core runtime improvements.");
+    expect(result.nextCursor).toBe("project-cursor-2");
+  });
+
+  test("gets project details including description", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getProject("project_1");
+
+    expect(result.id).toBe("project_1");
+    expect(result.description).toBe("Core runtime improvements.");
+  });
+
   test("lists documents and maps fields", async () => {
     const gateway = new LinearGateway(createTestClient());
     const result = await gateway.listDocuments({ limit: 10 });
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.title).toBe("Agent rollout plan");
+    expect(result.items[0]?.description).toBe("## Scope");
     expect(result.items[0]?.projectId).toBe("proj_1");
     expect(result.items[0]?.initiativeId).toBe("init_1");
     expect(result.nextCursor).toBe("document-cursor-2");
+  });
+
+  test("gets document details including description", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getDocument("doc_1");
+
+    expect(result.id).toBe("doc_1");
+    expect(result.description).toBe("## Scope");
   });
 
   test("lists templates and maps fields", async () => {

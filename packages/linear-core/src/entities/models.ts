@@ -2,6 +2,7 @@ export interface IssueRecord {
   readonly id: string;
   readonly identifier: string;
   readonly title: string;
+  readonly description?: string;
   readonly branchName?: string;
   readonly priority: number;
   readonly stateName?: string;
@@ -15,6 +16,7 @@ export interface IssueRecord {
 export interface ProjectRecord {
   readonly id: string;
   readonly name: string;
+  readonly description?: string;
   readonly state: string;
   readonly priority: number;
   readonly progress: number;
@@ -25,6 +27,7 @@ export interface ProjectRecord {
 export interface DocumentRecord {
   readonly id: string;
   readonly title: string;
+  readonly description?: string;
   readonly content?: string;
   readonly url: string;
   readonly projectId?: string;

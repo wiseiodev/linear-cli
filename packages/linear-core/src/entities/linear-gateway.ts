@@ -68,6 +68,7 @@ function toIssue(record: SdkIssueLike, stateName?: string): IssueRecord {
     id: record.id,
     identifier: record.identifier,
     title: record.title,
+    description: record.description ?? undefined,
     branchName: record.branchName ?? undefined,
     priority: record.priority,
     stateName,
@@ -95,6 +96,7 @@ function toProject(record: SdkProjectLike): ProjectRecord {
   return {
     id: record.id,
     name: record.name,
+    description: record.description ?? undefined,
     state: record.state,
     priority: record.priority,
     progress: record.progress,
@@ -104,9 +106,11 @@ function toProject(record: SdkProjectLike): ProjectRecord {
 }
 
 function toDocument(record: SdkDocumentLike): DocumentRecord {
+  const description = (record as SdkDocumentLike & { description?: string | null }).description;
   return {
     id: record.id,
     title: record.title,
+    description: description ?? record.content ?? undefined,
     content: record.content ?? undefined,
     url: record.url,
     projectId: record.projectId,

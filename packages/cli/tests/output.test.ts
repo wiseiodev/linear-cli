@@ -94,6 +94,7 @@ describe("renderEnvelope", () => {
         id: "i_1",
         identifier: "ANN-123",
         title: "Issue title",
+        description: "Issue description",
         priority: 2,
         stateName: "Todo",
         updatedAt: "2026-03-18T00:00:00.000Z",
@@ -111,6 +112,7 @@ describe("renderEnvelope", () => {
     expect(rows[0]).toMatchObject({
       identifier: "ANN-123",
       title: "Issue title",
+      description: "Issue description",
       priority: 2,
     });
     expect(rows[0]?.key).toBeUndefined();
