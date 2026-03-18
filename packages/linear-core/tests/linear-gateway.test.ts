@@ -13,6 +13,7 @@ function createTestClient(): SdkLinearClient {
         nodes: [
           {
             id: "i_1",
+            number: 1,
             identifier: "ENG-1",
             title: "Fix parser",
             branchName: "eng-1-fix-parser",
@@ -35,6 +36,7 @@ function createTestClient(): SdkLinearClient {
     async issue() {
       return {
         id: "i_1",
+        number: 1,
         identifier: "ENG-1",
         title: "Fix parser",
         description: "Parser crashes when a trailing comma is present.",
@@ -68,10 +70,14 @@ function createTestClient(): SdkLinearClient {
             id: "project_1",
             name: "Agent Runtime",
             description: "Core runtime improvements.",
+            content: "Project context markdown",
+            color: "#0055FF",
             state: "active",
             priority: 2,
             progress: 0.42,
+            targetDate: "2026-04-01",
             url: "https://linear.app/project/agent-runtime",
+            createdAt: new Date("2026-03-01T00:00:00.000Z"),
             updatedAt: new Date("2026-03-16T00:00:00.000Z"),
           },
         ],
@@ -85,10 +91,14 @@ function createTestClient(): SdkLinearClient {
         id: "project_1",
         name: "Agent Runtime",
         description: "Core runtime improvements.",
+        content: "Project context markdown",
+        color: "#0055FF",
         state: "active",
         priority: 2,
         progress: 0.42,
+        targetDate: "2026-04-01",
         url: "https://linear.app/project/agent-runtime",
+        createdAt: new Date("2026-03-01T00:00:00.000Z"),
         updatedAt: new Date("2026-03-16T00:00:00.000Z"),
       };
     },
@@ -108,6 +118,7 @@ function createTestClient(): SdkLinearClient {
             id: "doc_1",
             title: "Agent rollout plan",
             content: "## Scope",
+            color: "#00AA88",
             url: "https://linear.app/docs/agent-rollout-plan",
             projectId: "proj_1",
             initiativeId: "init_1",
@@ -125,6 +136,7 @@ function createTestClient(): SdkLinearClient {
         id: "doc_1",
         title: "Agent rollout plan",
         content: "## Scope",
+        color: "#00AA88",
         url: "https://linear.app/docs/agent-rollout-plan",
         projectId: "proj_1",
         initiativeId: "init_1",
@@ -142,10 +154,41 @@ function createTestClient(): SdkLinearClient {
       throw createNotImplementedError("deleteDocument");
     },
     async cycles() {
-      throw createNotImplementedError("cycles");
+      return {
+        nodes: [
+          {
+            id: "c_1",
+            number: 8,
+            name: "Cycle 8",
+            description: "Cycle for platform hardening.",
+            progress: 0.7,
+            startsAt: new Date("2026-03-01T00:00:00.000Z"),
+            endsAt: new Date("2026-03-14T00:00:00.000Z"),
+            isActive: true,
+            teamId: "team_1",
+            createdAt: new Date("2026-02-27T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-05T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "cycle-cursor-2",
+        },
+      };
     },
     async cycle() {
-      throw createNotImplementedError("cycle");
+      return {
+        id: "c_1",
+        number: 8,
+        name: "Cycle 8",
+        description: "Cycle for platform hardening.",
+        progress: 0.7,
+        startsAt: new Date("2026-03-01T00:00:00.000Z"),
+        endsAt: new Date("2026-03-14T00:00:00.000Z"),
+        isActive: true,
+        teamId: "team_1",
+        createdAt: new Date("2026-02-27T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-05T00:00:00.000Z"),
+      };
     },
     async createCycle() {
       throw createNotImplementedError("createCycle");
@@ -166,9 +209,12 @@ function createTestClient(): SdkLinearClient {
             id: "init_1",
             name: "Agent Platform",
             description: "Make agents useful",
+            content: "Initiative execution details.",
+            color: "#FF5500",
             status: "active",
             targetDate: "2026-04-01",
             url: "https://linear.app/initiative/agent-platform",
+            createdAt: new Date("2026-02-28T00:00:00.000Z"),
             updatedAt: new Date("2026-03-16T00:00:00.000Z"),
           },
         ],
@@ -178,7 +224,18 @@ function createTestClient(): SdkLinearClient {
       };
     },
     async initiative() {
-      throw createNotImplementedError("initiative");
+      return {
+        id: "init_1",
+        name: "Agent Platform",
+        description: "Make agents useful",
+        content: "Initiative execution details.",
+        color: "#FF5500",
+        status: "active",
+        targetDate: "2026-04-01",
+        url: "https://linear.app/initiative/agent-platform",
+        createdAt: new Date("2026-02-28T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      };
     },
     async createInitiative() {
       throw createNotImplementedError("createInitiative");
@@ -190,10 +247,35 @@ function createTestClient(): SdkLinearClient {
       throw createNotImplementedError("deleteInitiative");
     },
     async teams() {
-      throw createNotImplementedError("teams");
+      return {
+        nodes: [
+          {
+            id: "team_1",
+            key: "ENG",
+            name: "Engineering",
+            displayName: "Engineering",
+            description: "Product engineering team.",
+            color: "#123456",
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-01T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "team-cursor-2",
+        },
+      };
     },
     async team() {
-      throw createNotImplementedError("team");
+      return {
+        id: "team_1",
+        key: "ENG",
+        name: "Engineering",
+        displayName: "Engineering",
+        description: "Product engineering team.",
+        color: "#123456",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-01T00:00:00.000Z"),
+      };
     },
     async createTeam() {
       throw createNotImplementedError("createTeam");
@@ -205,19 +287,69 @@ function createTestClient(): SdkLinearClient {
       throw createNotImplementedError("deleteTeam");
     },
     async users() {
-      throw createNotImplementedError("users");
+      return {
+        nodes: [
+          {
+            id: "user_1",
+            name: "Alex Example",
+            displayName: "Alex",
+            description: "Staff engineer",
+            email: "alex@example.com",
+            active: true,
+            url: "https://linear.app/user/alex",
+            createdAt: new Date("2026-01-10T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "user-cursor-2",
+        },
+      };
     },
     async user() {
-      throw createNotImplementedError("user");
+      return {
+        id: "user_1",
+        name: "Alex Example",
+        displayName: "Alex",
+        description: "Staff engineer",
+        email: "alex@example.com",
+        active: true,
+        url: "https://linear.app/user/alex",
+        createdAt: new Date("2026-01-10T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      };
     },
     async updateUser() {
       throw createNotImplementedError("updateUser");
     },
     async issueLabels() {
-      throw createNotImplementedError("issueLabels");
+      return {
+        nodes: [
+          {
+            id: "label_1",
+            name: "Bug",
+            description: "Reliability issue",
+            color: "#FF0000",
+            teamId: "team_1",
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-15T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "label-cursor-2",
+        },
+      };
     },
     async issueLabel() {
-      throw createNotImplementedError("issueLabel");
+      return {
+        id: "label_1",
+        name: "Bug",
+        description: "Reliability issue",
+        color: "#FF0000",
+        teamId: "team_1",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-15T00:00:00.000Z"),
+      };
     },
     async createIssueLabel() {
       throw createNotImplementedError("createIssueLabel");
@@ -229,7 +361,31 @@ function createTestClient(): SdkLinearClient {
       throw createNotImplementedError("deleteIssueLabel");
     },
     async comments() {
-      throw createNotImplementedError("comments");
+      return {
+        nodes: [
+          {
+            id: "comment_1",
+            body: "Looks good",
+            url: "https://linear.app/comment/comment_1",
+            createdAt: new Date("2026-03-15T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+            issueId: "i_1",
+          },
+        ],
+        pageInfo: {
+          endCursor: "comment-cursor-2",
+        },
+      };
+    },
+    async comment() {
+      return {
+        id: "comment_1",
+        body: "Looks good",
+        url: "https://linear.app/comment/comment_1",
+        createdAt: new Date("2026-03-15T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+        issueId: "i_1",
+      };
     },
     async createComment() {
       throw createNotImplementedError("createComment");
@@ -241,22 +397,83 @@ function createTestClient(): SdkLinearClient {
       throw createNotImplementedError("deleteComment");
     },
     async attachments() {
-      throw createNotImplementedError("attachments");
+      return {
+        nodes: [
+          {
+            id: "att_1",
+            title: "Sentry ticket",
+            subtitle: "SENTRY-221",
+            url: "https://sentry.io/issues/221",
+            sourceType: "sentry",
+            createdAt: new Date("2026-03-14T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "attachment-cursor-2",
+        },
+      };
     },
     async attachment() {
-      throw createNotImplementedError("attachment");
+      return {
+        id: "att_1",
+        title: "Sentry ticket",
+        subtitle: "SENTRY-221",
+        url: "https://sentry.io/issues/221",
+        sourceType: "sentry",
+        createdAt: new Date("2026-03-14T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      };
     },
     async createAttachment() {
       throw createNotImplementedError("createAttachment");
+    },
+    async updateAttachment() {
+      return {
+        attachment: Promise.resolve({
+          id: "att_1",
+          title: "Updated attachment",
+          subtitle: "SENTRY-221",
+          url: "https://sentry.io/issues/221",
+          sourceType: "sentry",
+          createdAt: new Date("2026-03-14T00:00:00.000Z"),
+          updatedAt: new Date("2026-03-17T00:00:00.000Z"),
+        }),
+      };
     },
     async deleteAttachment() {
       throw createNotImplementedError("deleteAttachment");
     },
     async workflowStates() {
-      throw createNotImplementedError("workflowStates");
+      return {
+        nodes: [
+          {
+            id: "state_1",
+            name: "In Progress",
+            description: "Work is ongoing",
+            type: "started",
+            color: "#00FF00",
+            teamId: "team_1",
+            createdAt: new Date("2026-01-05T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "state-cursor-2",
+        },
+      };
     },
     async workflowState() {
-      throw createNotImplementedError("workflowState");
+      return {
+        id: "state_1",
+        name: "In Progress",
+        description: "Work is ongoing",
+        type: "started",
+        color: "#00FF00",
+        teamId: "team_1",
+        createdAt: new Date("2026-01-05T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      };
     },
     async createWorkflowState() {
       throw createNotImplementedError("createWorkflowState");
@@ -272,11 +489,13 @@ function createTestClient(): SdkLinearClient {
         id: "tpl_1",
         name: "Bug Report",
         description: "Track a bug",
+        color: "#FF8800",
         type: "issue",
         teamId: "team_1",
         templateData: {
           description: "Steps to reproduce",
         },
+        createdAt: new Date("2026-03-01T00:00:00.000Z"),
         updatedAt: new Date("2026-03-16T00:00:00.000Z"),
       },
     ]),
@@ -301,6 +520,7 @@ describe("LinearGateway", () => {
     const result = await gateway.listIssues({ limit: 10 });
 
     expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.number).toBe(1);
     expect(result.items[0]?.identifier).toBe("ENG-1");
     expect(result.items[0]?.branchName).toBe("eng-1-fix-parser");
     expect(result.items[0]?.stateName).toBe("In Progress");
@@ -319,6 +539,7 @@ describe("LinearGateway", () => {
     const gateway = new LinearGateway(createTestClient());
     const result = await gateway.getIssue("ENG-1");
 
+    expect(result.number).toBe(1);
     expect(result.identifier).toBe("ENG-1");
     expect(result.description).toBe("Parser crashes when a trailing comma is present.");
     expect(result.stateName).toBe("In Progress");
@@ -338,6 +559,9 @@ describe("LinearGateway", () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.name).toBe("Agent Platform");
+    expect(result.items[0]?.content).toBe("Initiative execution details.");
+    expect(result.items[0]?.color).toBe("#FF5500");
+    expect(result.items[0]?.createdAt).toBe("2026-02-28T00:00:00.000Z");
     expect(result.items[0]?.status).toBe("active");
     expect(result.nextCursor).toBe("initiative-cursor-2");
   });
@@ -349,6 +573,10 @@ describe("LinearGateway", () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.name).toBe("Agent Runtime");
     expect(result.items[0]?.description).toBe("Core runtime improvements.");
+    expect(result.items[0]?.content).toBe("Project context markdown");
+    expect(result.items[0]?.color).toBe("#0055FF");
+    expect(result.items[0]?.targetDate).toBe("2026-04-01");
+    expect(result.items[0]?.createdAt).toBe("2026-03-01T00:00:00.000Z");
     expect(result.nextCursor).toBe("project-cursor-2");
   });
 
@@ -358,6 +586,10 @@ describe("LinearGateway", () => {
 
     expect(result.id).toBe("project_1");
     expect(result.description).toBe("Core runtime improvements.");
+    expect(result.content).toBe("Project context markdown");
+    expect(result.color).toBe("#0055FF");
+    expect(result.targetDate).toBe("2026-04-01");
+    expect(result.createdAt).toBe("2026-03-01T00:00:00.000Z");
   });
 
   test("lists documents and maps fields", async () => {
@@ -367,6 +599,7 @@ describe("LinearGateway", () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.title).toBe("Agent rollout plan");
     expect(result.items[0]?.description).toBe("## Scope");
+    expect(result.items[0]?.color).toBe("#00AA88");
     expect(result.items[0]?.projectId).toBe("proj_1");
     expect(result.items[0]?.initiativeId).toBe("init_1");
     expect(result.nextCursor).toBe("document-cursor-2");
@@ -378,6 +611,75 @@ describe("LinearGateway", () => {
 
     expect(result.id).toBe("doc_1");
     expect(result.description).toBe("## Scope");
+    expect(result.color).toBe("#00AA88");
+  });
+
+  test("gets cycle details including description and timestamps", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getCycle("c_1");
+
+    expect(result.id).toBe("c_1");
+    expect(result.description).toBe("Cycle for platform hardening.");
+    expect(result.createdAt).toBe("2026-02-27T00:00:00.000Z");
+    expect(result.updatedAt).toBe("2026-03-05T00:00:00.000Z");
+  });
+
+  test("gets team details including color and timestamps", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getTeam("team_1");
+
+    expect(result.id).toBe("team_1");
+    expect(result.color).toBe("#123456");
+    expect(result.createdAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(result.updatedAt).toBe("2026-03-01T00:00:00.000Z");
+  });
+
+  test("gets user details including description and url", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getUser("user_1");
+
+    expect(result.id).toBe("user_1");
+    expect(result.description).toBe("Staff engineer");
+    expect(result.url).toBe("https://linear.app/user/alex");
+    expect(result.createdAt).toBe("2026-01-10T00:00:00.000Z");
+    expect(result.updatedAt).toBe("2026-03-16T00:00:00.000Z");
+  });
+
+  test("gets label details including description and timestamps", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getLabel("label_1");
+
+    expect(result.id).toBe("label_1");
+    expect(result.description).toBe("Reliability issue");
+    expect(result.createdAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(result.updatedAt).toBe("2026-03-15T00:00:00.000Z");
+  });
+
+  test("gets comment details including url", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getComment("comment_1");
+
+    expect(result.id).toBe("comment_1");
+    expect(result.url).toBe("https://linear.app/comment/comment_1");
+  });
+
+  test("updates attachment and maps subtitle and updatedAt", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.updateAttachment("att_1", { title: "Updated attachment" });
+
+    expect(result.id).toBe("att_1");
+    expect(result.subtitle).toBe("SENTRY-221");
+    expect(result.updatedAt).toBe("2026-03-17T00:00:00.000Z");
+  });
+
+  test("gets workflow state details including description and timestamps", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.getWorkflowState("state_1");
+
+    expect(result.id).toBe("state_1");
+    expect(result.description).toBe("Work is ongoing");
+    expect(result.createdAt).toBe("2026-01-05T00:00:00.000Z");
+    expect(result.updatedAt).toBe("2026-03-16T00:00:00.000Z");
   });
 
   test("lists templates and maps fields", async () => {
@@ -386,7 +688,9 @@ describe("LinearGateway", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]?.name).toBe("Bug Report");
+    expect(result[0]?.color).toBe("#FF8800");
     expect(result[0]?.type).toBe("issue");
     expect(result[0]?.teamId).toBe("team_1");
+    expect(result[0]?.createdAt).toBe("2026-03-01T00:00:00.000Z");
   });
 });

@@ -17,6 +17,7 @@ import type {
 import type {
   SdkAttachmentInput,
   SdkAttachmentLike,
+  SdkAttachmentUpdateInput,
   SdkCommentInput,
   SdkCommentLike,
   SdkCommentUpdateInput,
@@ -66,6 +67,7 @@ function toDateString(value: Date): string {
 function toIssue(record: SdkIssueLike, stateName?: string): IssueRecord {
   return {
     id: record.id,
+    number: record.number,
     identifier: record.identifier,
     title: record.title,
     description: record.description ?? undefined,
@@ -85,9 +87,12 @@ function toInitiative(record: SdkInitiativeLike): InitiativeRecord {
     id: record.id,
     name: record.name,
     description: record.description ?? undefined,
+    content: record.content ?? undefined,
+    color: record.color ?? undefined,
     status: record.status,
     targetDate: record.targetDate ?? undefined,
     url: record.url,
+    createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
   };
 }
@@ -97,10 +102,14 @@ function toProject(record: SdkProjectLike): ProjectRecord {
     id: record.id,
     name: record.name,
     description: record.description ?? undefined,
+    content: record.content ?? undefined,
+    color: record.color ?? undefined,
     state: record.state,
     priority: record.priority,
     progress: record.progress,
+    targetDate: record.targetDate ?? undefined,
     url: record.url,
+    createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
   };
 }
@@ -112,6 +121,7 @@ function toDocument(record: SdkDocumentLike): DocumentRecord {
     title: record.title,
     description: description ?? record.content ?? undefined,
     content: record.content ?? undefined,
+    color: record.color ?? undefined,
     url: record.url,
     projectId: record.projectId,
     initiativeId: record.initiativeId,
@@ -125,11 +135,14 @@ function toCycle(record: SdkCycleLike): CycleRecord {
     id: record.id,
     number: record.number,
     name: record.name ?? undefined,
+    description: record.description ?? undefined,
     progress: record.progress,
     startsAt: toDateString(record.startsAt),
     endsAt: toDateString(record.endsAt),
     isActive: record.isActive,
     teamId: record.teamId,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
   };
 }
 
@@ -140,6 +153,9 @@ function toTeam(record: SdkTeamLike): TeamRecord {
     name: record.name,
     displayName: record.displayName,
     description: record.description ?? undefined,
+    color: record.color ?? undefined,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
   };
 }
 
@@ -148,8 +164,12 @@ function toUser(record: SdkUserLike): UserRecord {
     id: record.id,
     name: record.name,
     displayName: record.displayName,
+    description: record.description ?? undefined,
     email: record.email,
     active: record.active,
+    url: record.url,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
   };
 }
 
@@ -157,8 +177,11 @@ function toLabel(record: SdkIssueLabelLike): LabelRecord {
   return {
     id: record.id,
     name: record.name,
+    description: record.description ?? undefined,
     color: record.color ?? undefined,
     teamId: record.teamId,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
   };
 }
 
@@ -166,6 +189,7 @@ function toComment(record: SdkCommentLike): CommentRecord {
   return {
     id: record.id,
     body: record.body,
+    url: record.url,
     createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
     issueId: record.issueId ?? undefined,
@@ -176,9 +200,11 @@ function toAttachment(record: SdkAttachmentLike): AttachmentRecord {
   return {
     id: record.id,
     title: record.title,
+    subtitle: record.subtitle ?? undefined,
     url: record.url,
     sourceType: record.sourceType ?? undefined,
     createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
   };
 }
 
@@ -186,9 +212,12 @@ function toWorkflowState(record: SdkWorkflowStateLike): WorkflowStateRecord {
   return {
     id: record.id,
     name: record.name,
+    description: record.description ?? undefined,
     type: record.type,
     color: record.color ?? undefined,
     teamId: record.teamId,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
   };
 }
 
@@ -197,9 +226,11 @@ function toTemplate(record: SdkTemplateLike): TemplateRecord {
     id: record.id,
     name: record.name,
     description: record.description ?? undefined,
+    color: record.color ?? undefined,
     type: record.type,
     teamId: record.teamId,
     templateData: record.templateData,
+    createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
   };
 }
@@ -501,6 +532,10 @@ export class LinearGateway {
     };
   }
 
+  public async getComment(id: string): Promise<CommentRecord> {
+    return toComment(await this.client.comment({ id }));
+  }
+
   public async createComment(input: SdkCommentInput): Promise<CommentRecord> {
     const payload = await this.client.createComment(input);
     return toComment(await requireEntity(payload.comment, "comment"));
@@ -532,6 +567,14 @@ export class LinearGateway {
 
   public async createAttachment(input: SdkAttachmentInput): Promise<AttachmentRecord> {
     const payload = await this.client.createAttachment(input);
+    return toAttachment(await requireEntity(payload.attachment, "attachment"));
+  }
+
+  public async updateAttachment(
+    id: string,
+    input: SdkAttachmentUpdateInput,
+  ): Promise<AttachmentRecord> {
+    const payload = await this.client.updateAttachment(id, input);
     return toAttachment(await requireEntity(payload.attachment, "attachment"));
   }
 

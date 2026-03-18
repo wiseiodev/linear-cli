@@ -4,6 +4,7 @@ import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import type {
   SdkAttachmentInput,
+  SdkAttachmentUpdateInput,
   SdkCommentInput,
   SdkCommentUpdateInput,
   SdkCycleInput,
@@ -155,6 +156,10 @@ function isCommentUpdateInput(value: unknown): value is SdkCommentUpdateInput {
 
 function isAttachmentCreateInput(value: unknown): value is SdkAttachmentInput {
   return isRecord(value) && hasString(value, "title") && hasString(value, "url");
+}
+
+function isAttachmentUpdateInput(value: unknown): value is SdkAttachmentUpdateInput {
+  return isRecord(value) && Object.keys(value).length > 0;
 }
 
 function isTemplateCreateInput(value: unknown): value is SdkTemplateInput {
@@ -757,6 +762,7 @@ export function createProgram(authManager = new AuthManager()): Command {
           cursor: globals.cursor,
         });
       },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getComment(id),
       create: async (_manager, payload, cmd) =>
         (await sessionGateway(cmd)).createComment(
           ensurePayload(payload, isCommentCreateInput, "Comment create payload requires body."),
@@ -794,6 +800,15 @@ export function createProgram(authManager = new AuthManager()): Command {
             payload,
             isAttachmentCreateInput,
             "Attachment create payload requires title and url.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateAttachment(
+          id,
+          ensurePayload(
+            payload,
+            isAttachmentUpdateInput,
+            "Attachment update payload must be a non-empty object.",
           ),
         ),
       delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteAttachment(id),

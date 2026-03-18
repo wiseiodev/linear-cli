@@ -41,12 +41,14 @@ export type SdkLinearClient = Pick<
   | "updateIssueLabel"
   | "deleteIssueLabel"
   | "comments"
+  | "comment"
   | "createComment"
   | "updateComment"
   | "deleteComment"
   | "attachments"
   | "attachment"
   | "createAttachment"
+  | "updateAttachment"
   | "deleteAttachment"
   | "workflowStates"
   | "workflowState"
@@ -117,6 +119,7 @@ export type SdkIssueLabelUpdateInput = Parameters<LinearClient["updateIssueLabel
 export type SdkCommentInput = Parameters<LinearClient["createComment"]>[0];
 export type SdkCommentUpdateInput = Parameters<LinearClient["updateComment"]>[1];
 export type SdkAttachmentInput = Parameters<LinearClient["createAttachment"]>[0];
+export type SdkAttachmentUpdateInput = Parameters<LinearClient["updateAttachment"]>[1];
 export type SdkWorkflowStateInput = Parameters<LinearClient["createWorkflowState"]>[0];
 export type SdkWorkflowStateUpdateInput = Parameters<LinearClient["updateWorkflowState"]>[1];
 export type SdkTemplateInput = Parameters<LinearClient["createTemplate"]>[0];

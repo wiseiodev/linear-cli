@@ -13,6 +13,10 @@ describe("help output", () => {
       program.commands.find((command) => command.name() === "documents")?.helpInformation() ?? "";
     const templatesHelp =
       program.commands.find((command) => command.name() === "templates")?.helpInformation() ?? "";
+    const commentsHelp =
+      program.commands.find((command) => command.name() === "comments")?.helpInformation() ?? "";
+    const attachmentsHelp =
+      program.commands.find((command) => command.name() === "attachments")?.helpInformation() ?? "";
 
     expect(help).toContain("--version");
     expect(help).toContain("docs");
@@ -26,5 +30,7 @@ describe("help output", () => {
     expect(initiativesHelp).toContain("create");
     expect(documentsHelp).toContain("list");
     expect(templatesHelp).toContain("list");
+    expect(commentsHelp).toContain("get");
+    expect(attachmentsHelp).toContain("update");
   });
 });
