@@ -3,6 +3,7 @@ export type LinearEntity =
   | "issues"
   | "initiatives"
   | "projects"
+  | "documents"
   | "cycles"
   | "teams"
   | "users"

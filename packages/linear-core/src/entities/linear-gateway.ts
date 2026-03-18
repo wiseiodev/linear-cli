@@ -4,6 +4,7 @@ import type {
   AttachmentRecord,
   CommentRecord,
   CycleRecord,
+  DocumentRecord,
   InitiativeRecord,
   IssueRecord,
   LabelRecord,
@@ -22,6 +23,9 @@ import type {
   SdkCycleInput,
   SdkCycleLike,
   SdkCycleUpdateInput,
+  SdkDocumentInput,
+  SdkDocumentLike,
+  SdkDocumentUpdateInput,
   SdkInitiativeInput,
   SdkInitiativeLike,
   SdkInitiativeUpdateInput,
@@ -94,6 +98,19 @@ function toProject(record: SdkProjectLike): ProjectRecord {
     priority: record.priority,
     progress: record.progress,
     url: record.url,
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
+function toDocument(record: SdkDocumentLike): DocumentRecord {
+  return {
+    id: record.id,
+    title: record.title,
+    content: record.content ?? undefined,
+    url: record.url,
+    projectId: record.projectId,
+    initiativeId: record.initiativeId,
+    createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
   };
 }
@@ -311,6 +328,38 @@ export class LinearGateway {
     id: string,
   ): Promise<{ readonly id?: string; readonly success: boolean }> {
     const payload = await this.client.deleteProject(id);
+    return {
+      id: payload.entityId,
+      success: payload.success,
+    };
+  }
+
+  public async listDocuments(options: ListOptions): Promise<PageResult<DocumentRecord>> {
+    const connection = await this.client.documents(toListVariables(options));
+    return {
+      items: connection.nodes.map(toDocument),
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getDocument(id: string): Promise<DocumentRecord> {
+    return toDocument(await this.client.document(id));
+  }
+
+  public async createDocument(input: SdkDocumentInput): Promise<DocumentRecord> {
+    const payload = await this.client.createDocument(input);
+    return toDocument(await requireEntity(payload.document, "document"));
+  }
+
+  public async updateDocument(id: string, input: SdkDocumentUpdateInput): Promise<DocumentRecord> {
+    const payload = await this.client.updateDocument(id, input);
+    return toDocument(await requireEntity(payload.document, "document"));
+  }
+
+  public async deleteDocument(
+    id: string,
+  ): Promise<{ readonly id?: string; readonly success: boolean }> {
+    const payload = await this.client.deleteDocument(id);
     return {
       id: payload.entityId,
       success: payload.success,

@@ -9,6 +9,8 @@ describe("help output", () => {
       program.commands.find((command) => command.name() === "issues")?.helpInformation() ?? "";
     const initiativesHelp =
       program.commands.find((command) => command.name() === "initiatives")?.helpInformation() ?? "";
+    const documentsHelp =
+      program.commands.find((command) => command.name() === "documents")?.helpInformation() ?? "";
     const templatesHelp =
       program.commands.find((command) => command.name() === "templates")?.helpInformation() ?? "";
 
@@ -17,9 +19,11 @@ describe("help output", () => {
     expect(help).toContain("skills");
     expect(help).toContain("issues");
     expect(help).toContain("initiatives");
+    expect(help).toContain("documents");
     expect(help).toContain("templates");
     expect(issuesHelp).toContain("browse");
     expect(initiativesHelp).toContain("create");
+    expect(documentsHelp).toContain("list");
     expect(templatesHelp).toContain("list");
   });
 });

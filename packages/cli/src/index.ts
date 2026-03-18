@@ -8,6 +8,8 @@ import type {
   SdkCommentUpdateInput,
   SdkCycleInput,
   SdkCycleUpdateInput,
+  SdkDocumentInput,
+  SdkDocumentUpdateInput,
   SdkInitiativeInput,
   SdkInitiativeUpdateInput,
   SdkIssueInput,
@@ -104,6 +106,14 @@ function isProjectCreateInput(value: unknown): value is SdkProjectInput {
 }
 
 function isProjectUpdateInput(value: unknown): value is SdkProjectUpdateInput {
+  return isRecord(value) && Object.keys(value).length > 0;
+}
+
+function isDocumentCreateInput(value: unknown): value is SdkDocumentInput {
+  return isRecord(value) && hasString(value, "title");
+}
+
+function isDocumentUpdateInput(value: unknown): value is SdkDocumentUpdateInput {
   return isRecord(value) && Object.keys(value).length > 0;
 }
 
@@ -563,6 +573,37 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   registerResourceCommand(
     program,
+    "documents",
+    "Document commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        return (await sessionGateway(cmd)).listDocuments({
+          limit: globals.limit,
+          cursor: globals.cursor,
+        });
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getDocument(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createDocument(
+          ensurePayload(payload, isDocumentCreateInput, "Document create payload requires title."),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateDocument(
+          id,
+          ensurePayload(
+            payload,
+            isDocumentUpdateInput,
+            "Document update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteDocument(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
     "cycles",
     "Cycle commands",
     {
@@ -809,9 +850,7 @@ export function createProgram(authManager = new AuthManager()): Command {
       try {
         const session = await authManager.openSession({ profile: globals.profile });
         const defaultScreen =
-          opts.screen === "projects" ||
-          opts.screen === "initiatives" ||
-          opts.screen === "cycles"
+          opts.screen === "projects" || opts.screen === "initiatives" || opts.screen === "cycles"
             ? opts.screen
             : "issues";
         await runLinearTui({

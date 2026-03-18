@@ -56,6 +56,7 @@ linear issues list --limit 10
 linear issues browse
 linear issues create --input '{"title":"Investigate bug","teamId":"<team-id>"}'
 linear projects list
+linear documents list
 
 # TUI
 linear tui --screen issues

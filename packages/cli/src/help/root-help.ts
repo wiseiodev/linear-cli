@@ -10,6 +10,7 @@ Examples:
   linear issues browse
   linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}'
   linear initiatives list
+  linear documents list
   linear templates list
   linear skills install issue-triage
   linear docs --open

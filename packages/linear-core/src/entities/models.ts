@@ -21,6 +21,17 @@ export interface ProjectRecord {
   readonly updatedAt: string;
 }
 
+export interface DocumentRecord {
+  readonly id: string;
+  readonly title: string;
+  readonly content?: string;
+  readonly url: string;
+  readonly projectId?: string;
+  readonly initiativeId?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export interface InitiativeRecord {
   readonly id: string;
   readonly name: string;

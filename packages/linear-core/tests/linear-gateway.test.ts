@@ -58,6 +58,37 @@ function createTestClient(): SdkLinearClient {
     async deleteProject() {
       throw createNotImplementedError("deleteProject");
     },
+    async documents() {
+      return {
+        nodes: [
+          {
+            id: "doc_1",
+            title: "Agent rollout plan",
+            content: "## Scope",
+            url: "https://linear.app/docs/agent-rollout-plan",
+            projectId: "proj_1",
+            initiativeId: "init_1",
+            createdAt: new Date("2026-03-15T00:00:00.000Z"),
+            updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+          },
+        ],
+        pageInfo: {
+          endCursor: "document-cursor-2",
+        },
+      };
+    },
+    async document() {
+      throw createNotImplementedError("document");
+    },
+    async createDocument() {
+      throw createNotImplementedError("createDocument");
+    },
+    async updateDocument() {
+      throw createNotImplementedError("updateDocument");
+    },
+    async deleteDocument() {
+      throw createNotImplementedError("deleteDocument");
+    },
     async cycles() {
       throw createNotImplementedError("cycles");
     },
@@ -239,6 +270,17 @@ describe("LinearGateway", () => {
     expect(result.items[0]?.name).toBe("Agent Platform");
     expect(result.items[0]?.status).toBe("active");
     expect(result.nextCursor).toBe("initiative-cursor-2");
+  });
+
+  test("lists documents and maps fields", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    const result = await gateway.listDocuments({ limit: 10 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.title).toBe("Agent rollout plan");
+    expect(result.items[0]?.projectId).toBe("proj_1");
+    expect(result.items[0]?.initiativeId).toBe("init_1");
+    expect(result.nextCursor).toBe("document-cursor-2");
   });
 
   test("lists templates and maps fields", async () => {

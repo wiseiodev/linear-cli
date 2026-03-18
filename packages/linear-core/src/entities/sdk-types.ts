@@ -17,6 +17,11 @@ export type SdkLinearClient = Pick<
   | "createProject"
   | "updateProject"
   | "deleteProject"
+  | "documents"
+  | "document"
+  | "createDocument"
+  | "updateDocument"
+  | "deleteDocument"
   | "cycles"
   | "cycle"
   | "createCycle"
@@ -58,6 +63,7 @@ export type SdkLinearClient = Pick<
 export type SdkIssueLike = Awaited<ReturnType<LinearClient["issue"]>>;
 export type SdkInitiativeLike = Awaited<ReturnType<LinearClient["initiative"]>>;
 export type SdkProjectLike = Awaited<ReturnType<LinearClient["project"]>>;
+export type SdkDocumentLike = Awaited<ReturnType<LinearClient["document"]>>;
 export type SdkCycleLike = Awaited<ReturnType<LinearClient["cycle"]>>;
 export type SdkTeamLike = Awaited<ReturnType<LinearClient["team"]>>;
 export type SdkUserLike = Awaited<ReturnType<LinearClient["user"]>>;
@@ -70,6 +76,7 @@ export type SdkTemplateLike = Awaited<ReturnType<LinearClient["template"]>>;
 export type SdkIssueConnectionLike = Awaited<ReturnType<LinearClient["issues"]>>;
 export type SdkInitiativeConnectionLike = Awaited<ReturnType<LinearClient["initiatives"]>>;
 export type SdkProjectConnectionLike = Awaited<ReturnType<LinearClient["projects"]>>;
+export type SdkDocumentConnectionLike = Awaited<ReturnType<LinearClient["documents"]>>;
 export type SdkCycleConnectionLike = Awaited<ReturnType<LinearClient["cycles"]>>;
 export type SdkTeamConnectionLike = Awaited<ReturnType<LinearClient["teams"]>>;
 export type SdkUserConnectionLike = Awaited<ReturnType<LinearClient["users"]>>;
@@ -82,6 +89,7 @@ export type SdkTemplateListLike = Awaited<LinearClient["templates"]>;
 export type SdkIssuePayloadLike = Awaited<ReturnType<LinearClient["createIssue"]>>;
 export type SdkInitiativePayloadLike = Awaited<ReturnType<LinearClient["createInitiative"]>>;
 export type SdkProjectPayloadLike = Awaited<ReturnType<LinearClient["createProject"]>>;
+export type SdkDocumentPayloadLike = Awaited<ReturnType<LinearClient["createDocument"]>>;
 export type SdkCyclePayloadLike = Awaited<ReturnType<LinearClient["createCycle"]>>;
 export type SdkTeamPayloadLike = Awaited<ReturnType<LinearClient["createTeam"]>>;
 export type SdkUserPayloadLike = Awaited<ReturnType<LinearClient["updateUser"]>>;
@@ -97,6 +105,8 @@ export type SdkInitiativeInput = Parameters<LinearClient["createInitiative"]>[0]
 export type SdkInitiativeUpdateInput = Parameters<LinearClient["updateInitiative"]>[1];
 export type SdkProjectInput = Parameters<LinearClient["createProject"]>[0];
 export type SdkProjectUpdateInput = Parameters<LinearClient["updateProject"]>[1];
+export type SdkDocumentInput = Parameters<LinearClient["createDocument"]>[0];
+export type SdkDocumentUpdateInput = Parameters<LinearClient["updateDocument"]>[1];
 export type SdkCycleInput = Parameters<LinearClient["createCycle"]>[0];
 export type SdkCycleUpdateInput = Parameters<LinearClient["updateCycle"]>[1];
 export type SdkTeamInput = Parameters<LinearClient["createTeam"]>[0];
