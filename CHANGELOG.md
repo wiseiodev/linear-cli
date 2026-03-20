@@ -1,3 +1,10 @@
+# [1.5.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.4.0...v1.5.0-alpha.1) (2026-03-20)
+
+
+### Features
+
+* **cli:** improve help discoverability for subcommands ([#1](https://github.com/wiseiodev/linear-cli/issues/1)) ([702ebce](https://github.com/wiseiodev/linear-cli/commit/702ebce13a42e1061e7c588b5f201563a06644ca))
+
 # [1.4.0](https://github.com/wiseiodev/linear-cli/compare/v1.3.0...v1.4.0) (2026-03-18)
 
 
