@@ -118,4 +118,45 @@ describe("renderEnvelope", () => {
     expect(rows[0]?.key).toBeUndefined();
     expect(logSpy).toHaveBeenCalledWith("issues.get");
   });
+
+  test("supports detail views with field selection for issue lists", () => {
+    const tableSpy = vi.spyOn(console, "table").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    renderEnvelope(
+      successEnvelope("issues", "list", {
+        items: [
+          {
+            id: "issue-1",
+            identifier: "ENG-1",
+            title: "Fix output formatting",
+            priority: 2,
+            stateName: "Todo",
+            updatedAt: "2026-03-16T17:00:00.000Z",
+            assigneeName: "Alex Example",
+            projectName: "CLI v2",
+            estimate: 3,
+          },
+        ],
+        nextCursor: null,
+      }),
+      {
+        json: false,
+        quiet: false,
+        view: "detail",
+        fields: ["identifier", "title", "assigneeName", "projectName", "estimate"],
+      },
+    );
+
+    expect(tableSpy).toHaveBeenCalledWith([
+      {
+        identifier: "ENG-1",
+        title: "Fix output formatting",
+        assigneeName: "Alex Example",
+        projectName: "CLI v2",
+        estimate: 3,
+      },
+    ]);
+    expect(logSpy).toHaveBeenCalledWith("issues.list");
+  });
 });

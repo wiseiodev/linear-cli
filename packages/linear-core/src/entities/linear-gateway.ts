@@ -3,12 +3,18 @@ import type { ListOptions, PageResult } from "../types/public.js";
 import type {
   AttachmentRecord,
   CommentRecord,
+  CustomerNeedRecord,
+  CustomerRecord,
   CycleRecord,
   DocumentRecord,
   InitiativeRecord,
+  InitiativeUpdateRecord,
   IssueRecord,
   LabelRecord,
+  NotificationRecord,
+  ProjectMilestoneRecord,
   ProjectRecord,
+  ProjectUpdateRecord,
   TeamRecord,
   TemplateRecord,
   UserRecord,
@@ -21,6 +27,12 @@ import type {
   SdkCommentInput,
   SdkCommentLike,
   SdkCommentUpdateInput,
+  SdkCustomerInput,
+  SdkCustomerLike,
+  SdkCustomerNeedInput,
+  SdkCustomerNeedLike,
+  SdkCustomerNeedUpdateInput,
+  SdkCustomerUpdateInput,
   SdkCycleInput,
   SdkCycleLike,
   SdkCycleUpdateInput,
@@ -29,7 +41,10 @@ import type {
   SdkDocumentUpdateInput,
   SdkInitiativeInput,
   SdkInitiativeLike,
+  SdkInitiativeUpdateCreateInput,
   SdkInitiativeUpdateInput,
+  SdkInitiativeUpdateLike,
+  SdkInitiativeUpdateUpdateInput,
   SdkIssueInput,
   SdkIssueLabelInput,
   SdkIssueLabelLike,
@@ -37,9 +52,17 @@ import type {
   SdkIssueLike,
   SdkIssueUpdateInput,
   SdkLinearClient,
+  SdkNotificationLike,
+  SdkNotificationUpdateInput,
   SdkProjectInput,
   SdkProjectLike,
+  SdkProjectMilestoneInput,
+  SdkProjectMilestoneLike,
+  SdkProjectMilestoneUpdateInput,
+  SdkProjectUpdateCreateInput,
   SdkProjectUpdateInput,
+  SdkProjectUpdateLike,
+  SdkProjectUpdateUpdateInput,
   SdkTeamInput,
   SdkTeamLike,
   SdkTeamUpdateInput,
@@ -64,7 +87,48 @@ function toDateString(value: Date): string {
   return value.toISOString();
 }
 
-function toIssue(record: SdkIssueLike, stateName?: string): IssueRecord {
+async function resolveFetch<T>(value: Promise<T> | undefined): Promise<T | undefined> {
+  return value ? await value : undefined;
+}
+
+async function resolveConnectionNodes<T>(
+  loader: (() => Promise<{ readonly nodes: readonly T[] }>) | undefined,
+): Promise<readonly T[]> {
+  if (!loader) {
+    return [];
+  }
+
+  const connection = await loader();
+  return connection.nodes;
+}
+
+function readDisplayName(
+  value: { readonly displayName?: string; readonly name?: string } | undefined,
+): string | undefined {
+  return value?.displayName ?? value?.name;
+}
+
+async function toIssue(record: SdkIssueLike): Promise<IssueRecord> {
+  const [state, assignee, project, cycle, team, milestone, parent, labels, children, relations] =
+    await Promise.all([
+      resolveFetch(record.state),
+      resolveFetch(record.assignee),
+      resolveFetch(record.project),
+      resolveFetch(record.cycle),
+      resolveFetch(record.team),
+      resolveFetch(record.projectMilestone),
+      resolveFetch(record.parent),
+      resolveConnectionNodes(
+        typeof record.labels === "function" ? () => record.labels() : undefined,
+      ),
+      resolveConnectionNodes(
+        typeof record.children === "function" ? () => record.children() : undefined,
+      ),
+      resolveConnectionNodes(
+        typeof record.relations === "function" ? () => record.relations() : undefined,
+      ),
+    ]);
+
   return {
     id: record.id,
     number: record.number,
@@ -73,9 +137,27 @@ function toIssue(record: SdkIssueLike, stateName?: string): IssueRecord {
     description: record.description ?? undefined,
     branchName: record.branchName ?? undefined,
     priority: record.priority,
-    stateName,
+    estimate: record.estimate ?? undefined,
+    dueDate: record.dueDate ?? undefined,
+    stateName: state?.name,
+    assigneeId: record.assigneeId ?? undefined,
+    assigneeName: readDisplayName(assignee),
     teamId: record.teamId,
+    teamKey: team?.key,
+    teamName: team?.displayName ?? team?.name,
     projectId: record.projectId,
+    projectName: project?.name,
+    cycleId: record.cycleId ?? undefined,
+    cycleName: cycle?.name ?? (cycle ? `Cycle ${cycle.number}` : undefined),
+    milestoneId: record.projectMilestoneId ?? undefined,
+    milestoneName: milestone?.name,
+    parentId: record.parentId ?? undefined,
+    parentIdentifier: parent?.identifier,
+    labelNames: labels
+      .map((label) => label.name)
+      .filter((value): value is string => typeof value === "string"),
+    childCount: children.length,
+    relationCount: relations.length,
     url: record.url,
     createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
@@ -97,6 +179,26 @@ function toInitiative(record: SdkInitiativeLike): InitiativeRecord {
   };
 }
 
+function toInitiativeUpdate(
+  record: SdkInitiativeUpdateLike,
+  initiativeName?: string,
+  userName?: string,
+): InitiativeUpdateRecord {
+  return {
+    id: record.id,
+    body: record.body,
+    health: String(record.health),
+    commentCount: record.commentCount,
+    initiativeId: record.initiativeId ?? undefined,
+    initiativeName,
+    userId: record.userId ?? undefined,
+    userName,
+    url: record.url,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
 function toProject(record: SdkProjectLike): ProjectRecord {
   return {
     id: record.id,
@@ -108,6 +210,44 @@ function toProject(record: SdkProjectLike): ProjectRecord {
     priority: record.priority,
     progress: record.progress,
     targetDate: record.targetDate ?? undefined,
+    url: record.url,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
+function toProjectMilestone(
+  record: SdkProjectMilestoneLike,
+  projectName?: string,
+): ProjectMilestoneRecord {
+  return {
+    id: record.id,
+    name: record.name,
+    description: record.description ?? undefined,
+    progress: record.progress,
+    status: String(record.status),
+    targetDate: record.targetDate ?? undefined,
+    projectId: record.projectId ?? undefined,
+    projectName,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
+function toProjectUpdate(
+  record: SdkProjectUpdateLike,
+  projectName?: string,
+  userName?: string,
+): ProjectUpdateRecord {
+  return {
+    id: record.id,
+    body: record.body,
+    health: String(record.health),
+    commentCount: record.commentCount,
+    projectId: record.projectId ?? undefined,
+    projectName,
+    userId: record.userId ?? undefined,
+    userName,
     url: record.url,
     createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
@@ -159,6 +299,55 @@ function toTeam(record: SdkTeamLike): TeamRecord {
   };
 }
 
+function toCustomer(
+  record: SdkCustomerLike,
+  ownerName?: string,
+  statusName?: string,
+  tierName?: string,
+): CustomerRecord {
+  return {
+    id: record.id,
+    name: record.name,
+    slugId: record.slugId,
+    domains: record.domains,
+    externalIds: record.externalIds,
+    approximateNeedCount: record.approximateNeedCount,
+    revenue: record.revenue ?? undefined,
+    size: record.size ?? undefined,
+    ownerId: record.ownerId ?? undefined,
+    ownerName,
+    statusId: record.statusId ?? undefined,
+    statusName,
+    tierId: record.tierId ?? undefined,
+    tierName,
+    url: record.url,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
+function toCustomerNeed(
+  record: SdkCustomerNeedLike,
+  customerName?: string,
+  issueIdentifier?: string,
+  projectName?: string,
+): CustomerNeedRecord {
+  return {
+    id: record.id,
+    body: record.body ?? undefined,
+    priority: record.priority,
+    url: record.url ?? undefined,
+    customerId: record.customerId ?? undefined,
+    customerName,
+    issueId: record.issueId ?? undefined,
+    issueIdentifier,
+    projectId: record.projectId ?? undefined,
+    projectName,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
 function toUser(record: SdkUserLike): UserRecord {
   return {
     id: record.id,
@@ -203,6 +392,19 @@ function toAttachment(record: SdkAttachmentLike): AttachmentRecord {
     subtitle: record.subtitle ?? undefined,
     url: record.url,
     sourceType: record.sourceType ?? undefined,
+    createdAt: toDateString(record.createdAt),
+    updatedAt: toDateString(record.updatedAt),
+  };
+}
+
+function toNotification(record: SdkNotificationLike, userName?: string): NotificationRecord {
+  return {
+    id: record.id,
+    type: record.type,
+    category: String(record.category),
+    userId: record.userId ?? undefined,
+    userName,
+    isRead: Boolean(record.readAt),
     createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
   };
@@ -260,12 +462,7 @@ export class LinearGateway {
   public async listIssues(options: ListOptions): Promise<PageResult<IssueRecord>> {
     const connection = await this.client.issues(toListVariables(options));
 
-    const items = await Promise.all(
-      connection.nodes.map(async (node) => {
-        const state = node.state ? await node.state : undefined;
-        return toIssue(node, state?.name);
-      }),
-    );
+    const items = await Promise.all(connection.nodes.map((node) => toIssue(node)));
 
     return {
       items,
@@ -275,8 +472,7 @@ export class LinearGateway {
 
   public async getIssue(id: string): Promise<IssueRecord> {
     const issue = await this.client.issue(id);
-    const state = issue.state ? await issue.state : undefined;
-    return toIssue(issue, state?.name);
+    return toIssue(issue);
   }
 
   public async getIssueBranchName(idOrIdentifier: string): Promise<{
@@ -297,15 +493,132 @@ export class LinearGateway {
   public async createIssue(input: SdkIssueInput): Promise<IssueRecord> {
     const payload = await this.client.createIssue(input);
     const issue = await requireEntity(payload.issue, "issue");
-    const state = issue.state ? await issue.state : undefined;
-    return toIssue(issue, state?.name);
+    return toIssue(issue);
   }
 
   public async updateIssue(id: string, input: SdkIssueUpdateInput): Promise<IssueRecord> {
     const payload = await this.client.updateIssue(id, input);
     const issue = await requireEntity(payload.issue, "issue");
-    const state = issue.state ? await issue.state : undefined;
-    return toIssue(issue, state?.name);
+    return toIssue(issue);
+  }
+
+  public async listCustomers(options: ListOptions): Promise<PageResult<CustomerRecord>> {
+    const connection = await this.client.customers(toListVariables(options));
+    const items = await Promise.all(
+      connection.nodes.map(async (node) =>
+        toCustomer(
+          node,
+          readDisplayName(await resolveFetch(node.owner)),
+          (await resolveFetch(node.status))?.name,
+          (await resolveFetch(node.tier))?.name,
+        ),
+      ),
+    );
+
+    return {
+      items,
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getCustomer(id: string): Promise<CustomerRecord> {
+    const customer = await this.client.customer(id);
+    return toCustomer(
+      customer,
+      readDisplayName(await resolveFetch(customer.owner)),
+      (await resolveFetch(customer.status))?.name,
+      (await resolveFetch(customer.tier))?.name,
+    );
+  }
+
+  public async createCustomer(input: SdkCustomerInput): Promise<CustomerRecord> {
+    const payload = await this.client.createCustomer(input);
+    const customer = await requireEntity(payload.customer, "customer");
+    return toCustomer(
+      customer,
+      readDisplayName(await resolveFetch(customer.owner)),
+      (await resolveFetch(customer.status))?.name,
+      (await resolveFetch(customer.tier))?.name,
+    );
+  }
+
+  public async updateCustomer(id: string, input: SdkCustomerUpdateInput): Promise<CustomerRecord> {
+    const payload = await this.client.updateCustomer(id, input);
+    const customer = await requireEntity(payload.customer, "customer");
+    return toCustomer(
+      customer,
+      readDisplayName(await resolveFetch(customer.owner)),
+      (await resolveFetch(customer.status))?.name,
+      (await resolveFetch(customer.tier))?.name,
+    );
+  }
+
+  public async deleteCustomer(id: string): Promise<{ readonly success: boolean }> {
+    const payload = await this.client.deleteCustomer(id);
+    return {
+      success: payload.success,
+    };
+  }
+
+  public async listCustomerNeeds(options: ListOptions): Promise<PageResult<CustomerNeedRecord>> {
+    const connection = await this.client.customerNeeds(toListVariables(options));
+    const items = await Promise.all(
+      connection.nodes.map(async (node) =>
+        toCustomerNeed(
+          node,
+          (await resolveFetch(node.customer))?.name,
+          (await resolveFetch(node.issue))?.identifier,
+          (await resolveFetch(node.project))?.name,
+        ),
+      ),
+    );
+
+    return {
+      items,
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getCustomerNeed(id: string): Promise<CustomerNeedRecord> {
+    const need = await this.client.customerNeed({ id });
+    return toCustomerNeed(
+      need,
+      (await resolveFetch(need.customer))?.name,
+      (await resolveFetch(need.issue))?.identifier,
+      (await resolveFetch(need.project))?.name,
+    );
+  }
+
+  public async createCustomerNeed(input: SdkCustomerNeedInput): Promise<CustomerNeedRecord> {
+    const payload = await this.client.createCustomerNeed(input);
+    const need = await requireEntity(payload.need, "customerNeed");
+    return toCustomerNeed(
+      need,
+      (await resolveFetch(need.customer))?.name,
+      (await resolveFetch(need.issue))?.identifier,
+      (await resolveFetch(need.project))?.name,
+    );
+  }
+
+  public async updateCustomerNeed(
+    id: string,
+    input: SdkCustomerNeedUpdateInput,
+  ): Promise<CustomerNeedRecord> {
+    const payload = await this.client.updateCustomerNeed(id, input);
+    const need = await requireEntity(payload.need, "customerNeed");
+    return toCustomerNeed(
+      need,
+      (await resolveFetch(need.customer))?.name,
+      (await resolveFetch(need.issue))?.identifier,
+      (await resolveFetch(need.project))?.name,
+    );
+  }
+
+  public async deleteCustomerNeed(id: string): Promise<{ readonly success: boolean }> {
+    const payload = await this.client.deleteCustomerNeed(id);
+    return {
+      success: payload.success,
+    };
   }
 
   public async deleteIssue(
@@ -353,6 +666,70 @@ export class LinearGateway {
     };
   }
 
+  public async listInitiativeUpdates(
+    options: ListOptions,
+  ): Promise<PageResult<InitiativeUpdateRecord>> {
+    const connection = await this.client.initiativeUpdates(toListVariables(options));
+    const items = await Promise.all(
+      connection.nodes.map(async (node) =>
+        toInitiativeUpdate(
+          node,
+          (await resolveFetch(node.initiative))?.name,
+          readDisplayName(await resolveFetch(node.user)),
+        ),
+      ),
+    );
+
+    return {
+      items,
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getInitiativeUpdate(id: string): Promise<InitiativeUpdateRecord> {
+    const update = await this.client.initiativeUpdate(id);
+    return toInitiativeUpdate(
+      update,
+      (await resolveFetch(update.initiative))?.name,
+      readDisplayName(await resolveFetch(update.user)),
+    );
+  }
+
+  public async createInitiativeUpdate(
+    input: SdkInitiativeUpdateCreateInput,
+  ): Promise<InitiativeUpdateRecord> {
+    const payload = await this.client.createInitiativeUpdate(input);
+    const update = await requireEntity(payload.initiativeUpdate, "initiativeUpdate");
+    return toInitiativeUpdate(
+      update,
+      (await resolveFetch(update.initiative))?.name,
+      readDisplayName(await resolveFetch(update.user)),
+    );
+  }
+
+  public async updateInitiativeUpdate(
+    id: string,
+    input: SdkInitiativeUpdateUpdateInput,
+  ): Promise<InitiativeUpdateRecord> {
+    const payload = await this.client.updateInitiativeUpdate(id, input);
+    const update = await requireEntity(payload.initiativeUpdate, "initiativeUpdate");
+    return toInitiativeUpdate(
+      update,
+      (await resolveFetch(update.initiative))?.name,
+      readDisplayName(await resolveFetch(update.user)),
+    );
+  }
+
+  public async deleteInitiativeUpdate(
+    id: string,
+  ): Promise<{ readonly id?: string; readonly success: boolean }> {
+    const payload = await this.client.archiveInitiativeUpdate(id);
+    return {
+      id: payload.entityId,
+      success: payload.success,
+    };
+  }
+
   public async listProjects(options: ListOptions): Promise<PageResult<ProjectRecord>> {
     const connection = await this.client.projects(toListVariables(options));
     return {
@@ -381,6 +758,110 @@ export class LinearGateway {
     const payload = await this.client.deleteProject(id);
     return {
       id: payload.entityId,
+      success: payload.success,
+    };
+  }
+
+  public async listProjectMilestones(
+    options: ListOptions,
+  ): Promise<PageResult<ProjectMilestoneRecord>> {
+    const connection = await this.client.projectMilestones(toListVariables(options));
+    const items = await Promise.all(
+      connection.nodes.map(async (node) =>
+        toProjectMilestone(node, (await resolveFetch(node.project))?.name),
+      ),
+    );
+
+    return {
+      items,
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getProjectMilestone(id: string): Promise<ProjectMilestoneRecord> {
+    const milestone = await this.client.projectMilestone(id);
+    return toProjectMilestone(milestone, (await resolveFetch(milestone.project))?.name);
+  }
+
+  public async createProjectMilestone(
+    input: SdkProjectMilestoneInput,
+  ): Promise<ProjectMilestoneRecord> {
+    const payload = await this.client.createProjectMilestone(input);
+    const milestone = await requireEntity(payload.projectMilestone, "projectMilestone");
+    return toProjectMilestone(milestone, (await resolveFetch(milestone.project))?.name);
+  }
+
+  public async updateProjectMilestone(
+    id: string,
+    input: SdkProjectMilestoneUpdateInput,
+  ): Promise<ProjectMilestoneRecord> {
+    const payload = await this.client.updateProjectMilestone(id, input);
+    const milestone = await requireEntity(payload.projectMilestone, "projectMilestone");
+    return toProjectMilestone(milestone, (await resolveFetch(milestone.project))?.name);
+  }
+
+  public async deleteProjectMilestone(id: string): Promise<{ readonly success: boolean }> {
+    const payload = await this.client.deleteProjectMilestone(id);
+    return {
+      success: payload.success,
+    };
+  }
+
+  public async listProjectUpdates(options: ListOptions): Promise<PageResult<ProjectUpdateRecord>> {
+    const connection = await this.client.projectUpdates(toListVariables(options));
+    const items = await Promise.all(
+      connection.nodes.map(async (node) =>
+        toProjectUpdate(
+          node,
+          (await resolveFetch(node.project))?.name,
+          readDisplayName(await resolveFetch(node.user)),
+        ),
+      ),
+    );
+
+    return {
+      items,
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getProjectUpdate(id: string): Promise<ProjectUpdateRecord> {
+    const update = await this.client.projectUpdate(id);
+    return toProjectUpdate(
+      update,
+      (await resolveFetch(update.project))?.name,
+      readDisplayName(await resolveFetch(update.user)),
+    );
+  }
+
+  public async createProjectUpdate(
+    input: SdkProjectUpdateCreateInput,
+  ): Promise<ProjectUpdateRecord> {
+    const payload = await this.client.createProjectUpdate(input);
+    const update = await requireEntity(payload.projectUpdate, "projectUpdate");
+    return toProjectUpdate(
+      update,
+      (await resolveFetch(update.project))?.name,
+      readDisplayName(await resolveFetch(update.user)),
+    );
+  }
+
+  public async updateProjectUpdate(
+    id: string,
+    input: SdkProjectUpdateUpdateInput,
+  ): Promise<ProjectUpdateRecord> {
+    const payload = await this.client.updateProjectUpdate(id, input);
+    const update = await requireEntity(payload.projectUpdate, "projectUpdate");
+    return toProjectUpdate(
+      update,
+      (await resolveFetch(update.project))?.name,
+      readDisplayName(await resolveFetch(update.user)),
+    );
+  }
+
+  public async deleteProjectUpdate(id: string): Promise<{ readonly success: boolean }> {
+    const payload = await this.client.deleteProjectUpdate(id);
+    return {
       success: payload.success,
     };
   }
@@ -580,6 +1061,41 @@ export class LinearGateway {
 
   public async deleteAttachment(id: string): Promise<{ readonly success: boolean }> {
     const payload = await this.client.deleteAttachment(id);
+    return {
+      success: payload.success,
+    };
+  }
+
+  public async listNotifications(options: ListOptions): Promise<PageResult<NotificationRecord>> {
+    const connection = await this.client.notifications(toListVariables(options));
+    const items = await Promise.all(
+      connection.nodes.map(async (node) =>
+        toNotification(node, readDisplayName(await resolveFetch(node.user))),
+      ),
+    );
+
+    return {
+      items,
+      nextCursor: connection.pageInfo.endCursor ?? null,
+    };
+  }
+
+  public async getNotification(id: string): Promise<NotificationRecord> {
+    const notification = await this.client.notification(id);
+    return toNotification(notification, readDisplayName(await resolveFetch(notification.user)));
+  }
+
+  public async updateNotification(
+    id: string,
+    input: SdkNotificationUpdateInput,
+  ): Promise<NotificationRecord> {
+    await this.client.updateNotification(id, input);
+    const notification = await this.client.notification(id);
+    return toNotification(notification, readDisplayName(await resolveFetch(notification.user)));
+  }
+
+  public async deleteNotification(id: string): Promise<{ readonly success: boolean }> {
+    const payload = await this.client.archiveNotification(id);
     return {
       success: payload.success,
     };

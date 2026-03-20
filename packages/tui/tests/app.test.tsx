@@ -112,9 +112,11 @@ describe("App", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(app.lastFrame()).toContain("Linear TUI");
-    expect(app.lastFrame()).toContain("Key");
+    expect(app.lastFrame()).toContain("Navigation");
+    expect(app.lastFrame()).toContain("Details");
     expect(app.lastFrame()).toContain("Issue title");
-    expect(app.lastFrame()).toContain("Selected: ENG-1");
+    expect(app.lastFrame()).toContain("ENG-1");
+    expect(app.lastFrame()).toContain("Todo");
     app.unmount();
   });
 

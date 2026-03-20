@@ -1,8 +1,13 @@
 export type LinearEntity =
   | "auth"
   | "issues"
+  | "customers"
+  | "customer-needs"
   | "initiatives"
+  | "initiative-updates"
   | "projects"
+  | "milestones"
+  | "project-updates"
   | "documents"
   | "cycles"
   | "teams"
@@ -10,10 +15,12 @@ export type LinearEntity =
   | "labels"
   | "comments"
   | "attachments"
+  | "notifications"
   | "states"
   | "templates"
   | "skills"
   | "docs"
+  | "doctor"
   | "tui";
 
 export type LinearAction =
@@ -72,4 +79,30 @@ export interface PageResult<T> {
 export interface ListOptions {
   readonly limit?: number;
   readonly cursor?: string | null;
+}
+
+export type ViewPreset = "table" | "detail" | "dense";
+
+export interface SortSpec {
+  readonly field: string;
+  readonly direction?: "asc" | "desc";
+}
+
+export interface FieldSelection {
+  readonly fields?: readonly string[];
+  readonly view?: ViewPreset;
+}
+
+export interface ListQuery extends ListOptions, FieldSelection {
+  readonly mine?: boolean;
+  readonly project?: string;
+  readonly cycle?: string;
+  readonly state?: string;
+  readonly assignee?: string;
+  readonly label?: string;
+  readonly priority?: string | number;
+  readonly status?: string;
+  readonly filter?: string;
+  readonly sort?: string | SortSpec;
+  readonly all?: boolean;
 }

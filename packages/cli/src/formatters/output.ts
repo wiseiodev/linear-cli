@@ -111,32 +111,55 @@ function toDocumentRow(item: {
   };
 }
 
-function toHumanRows(items: readonly unknown[]): readonly unknown[] {
+function pickFields(
+  item: Record<string, unknown>,
+  fields: readonly string[] | undefined,
+): Record<string, unknown> {
+  if (!fields || fields.length === 0) {
+    return item;
+  }
+
+  return Object.fromEntries(fields.map((field) => [field, item[field]]));
+}
+
+function toHumanRowsWithOptions(
+  items: readonly unknown[],
+  options: Pick<GlobalOptions, "fields" | "view">,
+): readonly unknown[] {
+  if (options.view === "detail") {
+    return items.map((item) => (isRecord(item) ? pickFields(item, options.fields) : item));
+  }
+
   if (items.every(isIssueLike)) {
-    return items.map((item) => ({
-      key: item.identifier,
-      title: item.title,
-      state: item.stateName ?? "-",
-      priority: item.priority,
-      updated: formatUpdatedAt(item.updatedAt),
-    }));
+    return items.map((item) =>
+      pickFields(
+        {
+          key: item.identifier,
+          title: item.title,
+          state: item.stateName ?? "-",
+          priority: item.priority,
+          updated: formatUpdatedAt(item.updatedAt),
+        },
+        options.fields,
+      ),
+    );
   }
 
   if (items.every(isDocumentLike)) {
-    return items.map(toDocumentRow);
+    return items.map((item) => pickFields(toDocumentRow(item), options.fields));
   }
 
-  return items;
+  return items.map((item) => (isRecord(item) ? pickFields(item, options.fields) : item));
 }
 
-function printHumanData(data: unknown): void {
+function printHumanData(data: unknown, options: GlobalOptions): void {
   if (Array.isArray(data)) {
-    console.table(toHumanRows(data));
+    console.table(toHumanRowsWithOptions(data, options));
     return;
   }
 
   if (isPageResult(data)) {
-    console.table(toHumanRows(data.items));
+    console.table(toHumanRowsWithOptions(data.items, options));
     if (data.nextCursor) {
       console.log(`Next cursor: ${data.nextCursor}`);
     }
@@ -145,11 +168,11 @@ function printHumanData(data: unknown): void {
 
   if (data !== null && typeof data === "object") {
     if (isDocumentLike(data)) {
-      console.table([toDocumentRow(data)]);
+      console.table([pickFields(toDocumentRow(data), options.fields)]);
       return;
     }
 
-    console.table([data]);
+    console.table([pickFields(data as Record<string, unknown>, options.fields)]);
     return;
   }
 
@@ -166,7 +189,7 @@ export function renderEnvelope<Data>(envelope: OutputEnvelope<Data>, options: Gl
     if (!options.quiet) {
       console.log(`${envelope.entity}.${envelope.action}`);
     }
-    printHumanData(envelope.data);
+    printHumanData(envelope.data, options);
     return;
   }
 
