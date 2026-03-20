@@ -7,18 +7,29 @@ import type {
   SdkAttachmentUpdateInput,
   SdkCommentInput,
   SdkCommentUpdateInput,
+  SdkCustomerInput,
+  SdkCustomerNeedInput,
+  SdkCustomerNeedUpdateInput,
+  SdkCustomerUpdateInput,
   SdkCycleInput,
   SdkCycleUpdateInput,
   SdkDocumentInput,
   SdkDocumentUpdateInput,
   SdkInitiativeInput,
+  SdkInitiativeUpdateCreateInput,
   SdkInitiativeUpdateInput,
+  SdkInitiativeUpdateUpdateInput,
   SdkIssueInput,
   SdkIssueLabelInput,
   SdkIssueLabelUpdateInput,
   SdkIssueUpdateInput,
+  SdkNotificationUpdateInput,
   SdkProjectInput,
+  SdkProjectMilestoneInput,
+  SdkProjectMilestoneUpdateInput,
+  SdkProjectUpdateCreateInput,
   SdkProjectUpdateInput,
+  SdkProjectUpdateUpdateInput,
   SdkTeamInput,
   SdkTeamUpdateInput,
   SdkTemplateInput,
@@ -42,6 +53,16 @@ import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
 import { issueBranchHelpText, issuesHelpText, rootHelpText } from "./help/root-help.js";
 import { getGlobalOptions } from "./runtime/options.js";
+import {
+  collectPageResult,
+  matchesCustomer,
+  matchesCustomerNeed,
+  matchesIssue,
+  matchesMilestone,
+  matchesNotification,
+  matchesProject,
+  matchesProjectUpdate,
+} from "./runtime/query.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
@@ -68,6 +89,10 @@ function readCliVersion(): string {
 
 function hasString(value: Record<string, unknown>, key: string): boolean {
   return typeof value[key] === "string";
+}
+
+function isNonEmptyRecord(value: unknown): value is Record<string, unknown> {
+  return isRecord(value) && Object.keys(value).length > 0;
 }
 
 function ensurePayload<T>(
@@ -107,7 +132,7 @@ function isProjectCreateInput(value: unknown): value is SdkProjectInput {
 }
 
 function isProjectUpdateInput(value: unknown): value is SdkProjectUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isDocumentCreateInput(value: unknown): value is SdkDocumentInput {
@@ -115,7 +140,7 @@ function isDocumentCreateInput(value: unknown): value is SdkDocumentInput {
 }
 
 function isDocumentUpdateInput(value: unknown): value is SdkDocumentUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isCycleCreateInput(value: unknown): value is SdkCycleInput {
@@ -123,7 +148,7 @@ function isCycleCreateInput(value: unknown): value is SdkCycleInput {
 }
 
 function isCycleUpdateInput(value: unknown): value is SdkCycleUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isTeamCreateInput(value: unknown): value is SdkTeamInput {
@@ -131,11 +156,11 @@ function isTeamCreateInput(value: unknown): value is SdkTeamInput {
 }
 
 function isTeamUpdateInput(value: unknown): value is SdkTeamUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isUserUpdateInput(value: unknown): value is SdkUserUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isLabelCreateInput(value: unknown): value is SdkIssueLabelInput {
@@ -143,7 +168,7 @@ function isLabelCreateInput(value: unknown): value is SdkIssueLabelInput {
 }
 
 function isLabelUpdateInput(value: unknown): value is SdkIssueLabelUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isCommentCreateInput(value: unknown): value is SdkCommentInput {
@@ -151,7 +176,7 @@ function isCommentCreateInput(value: unknown): value is SdkCommentInput {
 }
 
 function isCommentUpdateInput(value: unknown): value is SdkCommentUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isAttachmentCreateInput(value: unknown): value is SdkAttachmentInput {
@@ -159,7 +184,7 @@ function isAttachmentCreateInput(value: unknown): value is SdkAttachmentInput {
 }
 
 function isAttachmentUpdateInput(value: unknown): value is SdkAttachmentUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isTemplateCreateInput(value: unknown): value is SdkTemplateInput {
@@ -172,7 +197,7 @@ function isTemplateCreateInput(value: unknown): value is SdkTemplateInput {
 }
 
 function isTemplateUpdateInput(value: unknown): value is SdkTemplateUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
 }
 
 function isWorkflowStateCreateInput(value: unknown): value is SdkWorkflowStateInput {
@@ -180,7 +205,51 @@ function isWorkflowStateCreateInput(value: unknown): value is SdkWorkflowStateIn
 }
 
 function isWorkflowStateUpdateInput(value: unknown): value is SdkWorkflowStateUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
+  return isNonEmptyRecord(value);
+}
+
+function isCustomerCreateInput(value: unknown): value is SdkCustomerInput {
+  return isRecord(value) && hasString(value, "name");
+}
+
+function isCustomerUpdateInput(value: unknown): value is SdkCustomerUpdateInput {
+  return isNonEmptyRecord(value);
+}
+
+function isCustomerNeedCreateInput(value: unknown): value is SdkCustomerNeedInput {
+  return isNonEmptyRecord(value);
+}
+
+function isCustomerNeedUpdateInput(value: unknown): value is SdkCustomerNeedUpdateInput {
+  return isNonEmptyRecord(value);
+}
+
+function isProjectMilestoneCreateInput(value: unknown): value is SdkProjectMilestoneInput {
+  return isRecord(value) && hasString(value, "name");
+}
+
+function isProjectMilestoneUpdateInput(value: unknown): value is SdkProjectMilestoneUpdateInput {
+  return isNonEmptyRecord(value);
+}
+
+function isProjectUpdateCreateInput(value: unknown): value is SdkProjectUpdateCreateInput {
+  return isRecord(value) && hasString(value, "body");
+}
+
+function isProjectUpdateUpdateInput(value: unknown): value is SdkProjectUpdateUpdateInput {
+  return isNonEmptyRecord(value);
+}
+
+function isInitiativeUpdateCreateInput(value: unknown): value is SdkInitiativeUpdateCreateInput {
+  return isRecord(value) && hasString(value, "body");
+}
+
+function isInitiativeUpdateUpdateInput(value: unknown): value is SdkInitiativeUpdateUpdateInput {
+  return isNonEmptyRecord(value);
+}
+
+function isNotificationUpdatePayload(value: unknown): value is SdkNotificationUpdateInput {
+  return isNonEmptyRecord(value);
 }
 
 async function readSecret(prompt: string): Promise<string> {
@@ -230,14 +299,27 @@ export function createProgram(authManager = new AuthManager()): Command {
   program
     .name("linear")
     .version(readCliVersion(), "-v, --version", "output the version number")
-    .description("Agent-first Linear CLI")
+    .description("Linear CLI v2")
     .addHelpText("after", rootHelpText)
     .option("--json", "Output JSON envelope")
     .option("--profile <name>", "Profile name to use")
     .option("--team <key>", "Default team key")
     .option("--limit <n>", "List limit", (value) => Number.parseInt(value, 10))
     .option("--cursor <cursor>", "Pagination cursor")
-    .option("--quiet", "Reduce human output noise");
+    .option("--quiet", "Reduce human output noise")
+    .option("--mine", "Limit issue-oriented commands to items assigned to the authenticated user")
+    .option("--project <id-or-name>", "Project filter")
+    .option("--cycle <id-or-name>", "Cycle filter")
+    .option("--state <name>", "State or type filter")
+    .option("--assignee <name>", "Assignee filter")
+    .option("--label <name>", "Label filter")
+    .option("--priority <value>", "Priority filter")
+    .option("--status <name>", "Status or health filter")
+    .option("--filter <expr>", "Lightweight filter expression, e.g. estimate>2")
+    .option("--sort <field>", "Sort by a field, prefix with - for descending")
+    .option("--view <preset>", "Human output preset: table | detail | dense")
+    .option("--all", "Drain all pages before filtering")
+    .option("--fields <list>", "Comma-separated field selection for human output");
 
   const authCommand = program.command("auth").description("Authentication commands");
 
@@ -406,10 +488,25 @@ export function createProgram(authManager = new AuthManager()): Command {
       renderEnvelope(successEnvelope("skills", "install", result), globals);
     });
 
-  const sessionGateway = async (cmd: Command) => {
+  const openSessionForCommand = async (cmd: Command) => {
     const globals = getGlobalOptions(cmd);
-    const session = await authManager.openSession({ profile: globals.profile });
-    return session.gateway;
+    return authManager.openSession({ profile: globals.profile });
+  };
+
+  const sessionGateway = async (cmd: Command) => (await openSessionForCommand(cmd)).gateway;
+
+  const resolveViewerName = async (
+    cmd: Command,
+    options?: { readonly forceMine?: boolean },
+  ): Promise<string | undefined> => {
+    const globals = getGlobalOptions(cmd);
+    if (!options?.forceMine && !globals.mine && globals.assignee !== "me") {
+      return undefined;
+    }
+
+    const session = await openSessionForCommand(cmd);
+    const viewer = await session.client.viewer;
+    return viewer.displayName ?? viewer.name;
   };
 
   registerResourceCommand(
@@ -419,10 +516,13 @@ export function createProgram(authManager = new AuthManager()): Command {
     {
       list: async (_manager, cmd) => {
         const globals = getGlobalOptions(cmd);
-        return (await sessionGateway(cmd)).listIssues({
-          limit: globals.limit,
-          cursor: globals.cursor,
-        });
+        const viewerName = await resolveViewerName(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listIssues(options),
+          globals,
+          (issue) => matchesIssue(issue, globals, viewerName),
+        );
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getIssue(id),
       create: async (_manager, payload, cmd) => {
@@ -538,6 +638,77 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   registerResourceCommand(
     program,
+    "customers",
+    "Customer commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const viewerName = await resolveViewerName(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listCustomers(options),
+          globals,
+          (customer) => matchesCustomer(customer, globals, viewerName),
+        );
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getCustomer(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createCustomer(
+          ensurePayload(payload, isCustomerCreateInput, "Customer create payload requires name."),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateCustomer(
+          id,
+          ensurePayload(
+            payload,
+            isCustomerUpdateInput,
+            "Customer update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteCustomer(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
+    "customer-needs",
+    "Customer request commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listCustomerNeeds(options),
+          globals,
+          (need) => matchesCustomerNeed(need, globals),
+        );
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getCustomerNeed(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createCustomerNeed(
+          ensurePayload(
+            payload,
+            isCustomerNeedCreateInput,
+            "Customer need create payload must be a non-empty object.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateCustomerNeed(
+          id,
+          ensurePayload(
+            payload,
+            isCustomerNeedUpdateInput,
+            "Customer need update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteCustomerNeed(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
     "initiatives",
     "Initiative commands",
     {
@@ -573,15 +744,50 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   registerResourceCommand(
     program,
+    "initiative-updates",
+    "Initiative update commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult((options) => gateway.listInitiativeUpdates(options), globals);
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getInitiativeUpdate(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createInitiativeUpdate(
+          ensurePayload(
+            payload,
+            isInitiativeUpdateCreateInput,
+            "Initiative update create payload requires body.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateInitiativeUpdate(
+          id,
+          ensurePayload(
+            payload,
+            isInitiativeUpdateUpdateInput,
+            "Initiative update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteInitiativeUpdate(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
     "projects",
     "Project commands",
     {
       list: async (_manager, cmd) => {
         const globals = getGlobalOptions(cmd);
-        return (await sessionGateway(cmd)).listProjects({
-          limit: globals.limit,
-          cursor: globals.cursor,
-        });
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listProjects(options),
+          globals,
+          (project) => matchesProject(project, globals),
+        );
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getProject(id),
       create: async (_manager, payload, cmd) =>
@@ -598,6 +804,80 @@ export function createProgram(authManager = new AuthManager()): Command {
           ),
         ),
       delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteProject(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
+    "milestones",
+    "Project milestone commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listProjectMilestones(options),
+          globals,
+          (milestone) => matchesMilestone(milestone, globals),
+        );
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getProjectMilestone(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createProjectMilestone(
+          ensurePayload(
+            payload,
+            isProjectMilestoneCreateInput,
+            "Milestone create payload requires name.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateProjectMilestone(
+          id,
+          ensurePayload(
+            payload,
+            isProjectMilestoneUpdateInput,
+            "Milestone update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteProjectMilestone(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
+    "project-updates",
+    "Project update commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listProjectUpdates(options),
+          globals,
+          (update) => matchesProjectUpdate(update, globals),
+        );
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getProjectUpdate(id),
+      create: async (_manager, payload, cmd) =>
+        (await sessionGateway(cmd)).createProjectUpdate(
+          ensurePayload(
+            payload,
+            isProjectUpdateCreateInput,
+            "Project update create payload requires body.",
+          ),
+        ),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateProjectUpdate(
+          id,
+          ensurePayload(
+            payload,
+            isProjectUpdateUpdateInput,
+            "Project update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteProjectUpdate(id),
     },
     authManager,
   );
@@ -849,6 +1129,35 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   registerResourceCommand(
     program,
+    "notifications",
+    "Notification commands",
+    {
+      list: async (_manager, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
+        return collectPageResult(
+          (options) => gateway.listNotifications(options),
+          globals,
+          (notification) => matchesNotification(notification, globals),
+        );
+      },
+      get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getNotification(id),
+      update: async (_manager, id, payload, cmd) =>
+        (await sessionGateway(cmd)).updateNotification(
+          id,
+          ensurePayload(
+            payload,
+            isNotificationUpdatePayload,
+            "Notification update payload must be a non-empty object.",
+          ),
+        ),
+      delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteNotification(id),
+    },
+    authManager,
+  );
+
+  registerResourceCommand(
+    program,
     "states",
     "Workflow state commands",
     {
@@ -881,6 +1190,191 @@ export function createProgram(authManager = new AuthManager()): Command {
     },
     authManager,
   );
+
+  program
+    .command("doctor")
+    .description("Validate auth, profile, API connectivity, and rate limits")
+    .action(async (_, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      try {
+        const status = await authManager.status(globals.profile);
+        const session = await openSessionForCommand(cmd);
+        const viewer = await session.client.viewer;
+        const rateLimit = await session.client.rateLimitStatus;
+
+        renderEnvelope(
+          successEnvelope("doctor", "show", {
+            status,
+            viewer: {
+              id: viewer.id,
+              name: viewer.displayName ?? viewer.name,
+              email: viewer.email,
+            },
+            rateLimit,
+          }),
+          globals,
+        );
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("doctor", "show", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  program
+    .command("my-work")
+    .description("List work assigned to the authenticated user")
+    .action(async (_, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      try {
+        const viewerName = await resolveViewerName(cmd, { forceMine: true });
+        const gateway = await sessionGateway(cmd);
+        const data = await collectPageResult(
+          (options) => gateway.listIssues(options),
+          {
+            ...globals,
+            mine: true,
+          },
+          (issue) => matchesIssue(issue, { ...globals, mine: true }, viewerName),
+        );
+        renderEnvelope(successEnvelope("issues", "list", data), globals);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("issues", "list", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  program
+    .command("triage")
+    .description("List triage-ready issues, favoring unassigned or triage-state work")
+    .action(async (_, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      try {
+        const gateway = await sessionGateway(cmd);
+        const data = await collectPageResult(
+          (options) => gateway.listIssues(options),
+          globals,
+          (issue) =>
+            matchesIssue(issue, globals) &&
+            (!issue.assigneeName || /triage/i.test(issue.stateName ?? "")),
+        );
+        renderEnvelope(successEnvelope("issues", "list", data), globals);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("issues", "list", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  program
+    .command("updates")
+    .description("Browse inbox-style notifications and updates")
+    .action(async (_, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      try {
+        const gateway = await sessionGateway(cmd);
+        const data = await collectPageResult(
+          (options) => gateway.listNotifications(options),
+          globals,
+          (notification) => matchesNotification(notification, globals),
+        );
+        renderEnvelope(successEnvelope("notifications", "list", data), globals);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("notifications", "list", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  const projectWorkflowCommand = program
+    .command("project")
+    .description("Project workflow commands");
+
+  projectWorkflowCommand
+    .command("status")
+    .description("Show project status with milestones and recent updates")
+    .argument("<id>", "Project id")
+    .action(async (id, _, cmd) => {
+      const globals = getGlobalOptions(cmd);
+
+      try {
+        const gateway = await sessionGateway(cmd);
+        const [project, milestones, updates] = await Promise.all([
+          gateway.getProject(id),
+          collectPageResult(
+            (options) => gateway.listProjectMilestones(options),
+            {
+              ...globals,
+              project: id,
+              all: true,
+            },
+            (milestone) => matchesMilestone(milestone, { ...globals, project: id }),
+          ),
+          collectPageResult(
+            (options) => gateway.listProjectUpdates(options),
+            {
+              ...globals,
+              project: id,
+              all: true,
+            },
+            (update) => matchesProjectUpdate(update, { ...globals, project: id }),
+          ),
+        ]);
+
+        renderEnvelope(
+          successEnvelope("projects", "show", {
+            project,
+            milestones: milestones.items,
+            updates: updates.items,
+          }),
+          globals,
+        );
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("projects", "show", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
 
   program
     .command("tui")

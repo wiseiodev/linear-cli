@@ -12,15 +12,33 @@ export function Layout({ screen, children }: PropsWithChildren<LayoutProps>) {
       <Text bold color="cyan">
         Linear TUI
       </Text>
-      <Text color="gray">
-        Screens: [1] Issues [2] Projects [3] Initiatives [4] Documents [5] Cycles | [tab/shift+tab]
-        switch | [j/k] move | [n/p] page | [o] open selected | [r] refresh | [q] quit
-      </Text>
-      <Text>
-        Active: <Text color="green">{screen}</Text>
-      </Text>
-      <Box marginTop={1} flexDirection="column">
-        {children}
+      <Box marginTop={1}>
+        <Box
+          width={24}
+          marginRight={2}
+          flexDirection="column"
+          borderStyle="round"
+          borderColor="gray"
+          paddingX={1}
+        >
+          <Text bold>Navigation</Text>
+          <Text color={screen === "issues" ? "green" : "gray"}>[1] Issues</Text>
+          <Text color={screen === "projects" ? "green" : "gray"}>[2] Projects</Text>
+          <Text color={screen === "initiatives" ? "green" : "gray"}>[3] Initiatives</Text>
+          <Text color={screen === "documents" ? "green" : "gray"}>[4] Documents</Text>
+          <Text color={screen === "cycles" ? "green" : "gray"}>[5] Cycles</Text>
+          <Text color="gray">[tab] next</Text>
+          <Text color="gray">[shift-tab] prev</Text>
+        </Box>
+        <Box flexGrow={1} flexDirection="column">
+          {children}
+        </Box>
+      </Box>
+      <Box marginTop={1}>
+        <Text color="gray">
+          Active: <Text color="green">{screen}</Text> | [j/k] move | [n/p] page | [o] open | [r]
+          refresh | [q] quit
+        </Text>
       </Box>
     </Box>
   );

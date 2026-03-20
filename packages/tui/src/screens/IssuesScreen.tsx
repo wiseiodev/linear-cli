@@ -117,41 +117,57 @@ function IssuesTable({
   const visibleIssues = issues.slice(start, start + visibleRowCount);
 
   return (
-    <Box flexDirection="column">
-      <Text bold> Key Title State Pri Updated</Text>
-      <Text dimColor>
-        {" "}
-        -------------------------------------------------------------------------------
-      </Text>
-      {visibleIssues.map((issue, index) => {
-        const absoluteIndex = start + index;
-        const isSelected = absoluteIndex === selectedIndex;
+    <Box>
+      <Box flexDirection="column" width={80}>
+        <Text bold> Key Title State Pri Updated</Text>
+        <Text dimColor>
+          {" "}
+          -------------------------------------------------------------------------------
+        </Text>
+        {visibleIssues.map((issue, index) => {
+          const absoluteIndex = start + index;
+          const isSelected = absoluteIndex === selectedIndex;
 
-        return (
-          <Text key={issue.id} color={isSelected ? "cyan" : undefined}>
-            {isSelected ? ">" : " "} {pad(issue.identifier, 8)} {pad(truncate(issue.title, 42), 42)}{" "}
-            {pad(issue.stateName ?? "-", 14)} {pad(formatPriority(issue.priority), 4)}{" "}
-            {formatTimestamp(issue.updatedAt)}
-          </Text>
-        );
-      })}
-      <Text dimColor>
-        {" "}
-        -------------------------------------------------------------------------------
-      </Text>
-      <Text color="gray">
-        Rows {start + 1}-{Math.min(start + visibleIssues.length, issues.length)} of {issues.length}{" "}
-        | Prev page [{hasPreviousPage ? "p" : "-"}] | Next page [{hasNextPage ? "n" : "-"}] | Move
-        [j/k or arrows] | Open [o]
-      </Text>
-      {selectedIssue ? (
-        <>
-          <Text>
-            Selected: {selectedIssue.identifier} - {selectedIssue.title}
-          </Text>
-          <Text color="gray">{selectedIssue.url}</Text>
-        </>
-      ) : null}
+          return (
+            <Text key={issue.id} color={isSelected ? "cyan" : undefined}>
+              {isSelected ? ">" : " "} {pad(issue.identifier, 8)}{" "}
+              {pad(truncate(issue.title, 42), 42)} {pad(issue.stateName ?? "-", 14)}{" "}
+              {pad(formatPriority(issue.priority), 4)} {formatTimestamp(issue.updatedAt)}
+            </Text>
+          );
+        })}
+        <Text dimColor>
+          {" "}
+          -------------------------------------------------------------------------------
+        </Text>
+        <Text color="gray">
+          Rows {start + 1}-{Math.min(start + visibleIssues.length, issues.length)} of{" "}
+          {issues.length} | Prev page [{hasPreviousPage ? "p" : "-"}] | Next page [
+          {hasNextPage ? "n" : "-"}]
+        </Text>
+      </Box>
+      <Box
+        marginLeft={2}
+        flexDirection="column"
+        borderStyle="round"
+        borderColor="gray"
+        paddingX={1}
+        minWidth={32}
+      >
+        <Text bold>Details</Text>
+        {selectedIssue ? (
+          <>
+            <Text>{selectedIssue.identifier}</Text>
+            <Text>{selectedIssue.title}</Text>
+            <Text color="gray">State: {selectedIssue.stateName ?? "-"}</Text>
+            <Text color="gray">Priority: {formatPriority(selectedIssue.priority)}</Text>
+            <Text color="gray">Updated: {formatTimestamp(selectedIssue.updatedAt)}</Text>
+            <Text color="gray">{selectedIssue.url}</Text>
+          </>
+        ) : (
+          <Text color="gray">No issue selected.</Text>
+        )}
+      </Box>
     </Box>
   );
 }
