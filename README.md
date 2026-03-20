@@ -30,8 +30,18 @@ pnpm verify
 ## Run CLI
 
 ```bash
-pnpm --filter @wiseiodev/linear-cli dev -- --help
-pnpm --filter @wiseiodev/linear-cli dev -- issues list --json
+pnpm --filter @wiseiodev/linear-cli dev --help
+pnpm --filter @wiseiodev/linear-cli dev issues list --json
+```
+
+## Help Discovery
+
+```bash
+linear --help
+linear issues --help
+linear issues branch --help
+linear issues branch ANN-123 --json
+# branch name is in .data.branchName
 ```
 
 ## Example Commands
@@ -53,7 +63,7 @@ linear skills install issue-triage
 
 # CRUD
 linear issues list --limit 10
-linear issues branch ANN-123
+linear issues branch ANN-123 --json
 linear issues browse
 linear issues create --input '{"title":"Investigate bug","teamId":"<team-id>"}'
 linear projects list
