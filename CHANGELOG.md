@@ -1,3 +1,10 @@
+# [1.5.0-alpha.2](https://github.com/wiseiodev/linear-cli/compare/v1.5.0-alpha.1...v1.5.0-alpha.2) (2026-03-20)
+
+
+### Features
+
+* **cli:** add linear cli v2 foundations ([#2](https://github.com/wiseiodev/linear-cli/issues/2)) ([854d165](https://github.com/wiseiodev/linear-cli/commit/854d165701dc3917ef33b3c3f8e1ff55f94c197e))
+
 # [1.5.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.4.0...v1.5.0-alpha.1) (2026-03-20)
 
 
