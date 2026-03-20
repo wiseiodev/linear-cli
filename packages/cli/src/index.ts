@@ -40,7 +40,7 @@ import open from "open";
 import { runInteractiveOAuthLogin } from "./auth/login.js";
 import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
-import { rootHelpText } from "./help/root-help.js";
+import { issueBranchHelpText, issuesHelpText, rootHelpText } from "./help/root-help.js";
 import { getGlobalOptions } from "./runtime/options.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -225,6 +225,7 @@ async function resolveIssueTemplateId(
 
 export function createProgram(authManager = new AuthManager()): Command {
   const program = new Command();
+  program.configureHelp({ showGlobalOptions: true });
 
   program
     .name("linear")
@@ -468,11 +469,13 @@ export function createProgram(authManager = new AuthManager()): Command {
   issuesCommand?.commands
     .find((command) => command.name() === "create")
     ?.option("--template <id-or-name>", "Apply a template by exact id or exact name");
+  issuesCommand?.addHelpText("after", issuesHelpText);
 
   issuesCommand
     ?.command("branch")
     .description("Show branch name for an issue id or identifier")
     .argument("<id-or-identifier>", "Issue id (UUID) or identifier (e.g. ANN-123)")
+    .addHelpText("after", issueBranchHelpText)
     .action(async (idOrIdentifier, _, cmd) => {
       const globals = getGlobalOptions(cmd);
 
@@ -492,7 +495,6 @@ export function createProgram(authManager = new AuthManager()): Command {
         process.exitCode = 1;
       }
     });
-
   issuesCommand
     ?.command("browse")
     .description("Browse issues in the interactive terminal table")
