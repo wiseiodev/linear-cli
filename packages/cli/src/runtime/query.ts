@@ -11,6 +11,8 @@ import type {
 } from "@wiseiodev/linear-core";
 import type { GlobalOptions } from "./options.js";
 
+const PAGE_BATCH_SIZE = 50;
+
 function asRecord(value: object): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
@@ -25,6 +27,14 @@ function matchText(value: string | undefined, query: string | undefined): boolea
   }
 
   return normalizeText(value)?.includes(normalizeText(query) ?? "") ?? false;
+}
+
+function matchAnyText(query: string | undefined, ...values: Array<string | undefined>): boolean {
+  if (!query) {
+    return true;
+  }
+
+  return values.some((value) => matchText(value, query));
 }
 
 function runFilterExpression(item: object, expression: string | undefined): boolean {
@@ -73,8 +83,12 @@ function sortItems<T extends object>(items: readonly T[], sort?: string): T[] {
 }
 
 function shouldDrainPages(options: GlobalOptions): boolean {
+  return Boolean(options.all || options.sort);
+}
+
+function hasLocalFiltering(options: GlobalOptions): boolean {
   return Boolean(
-    options.all ||
+    options.team ||
       options.mine ||
       options.project ||
       options.cycle ||
@@ -83,8 +97,7 @@ function shouldDrainPages(options: GlobalOptions): boolean {
       options.label ||
       options.priority ||
       options.status ||
-      options.filter ||
-      options.sort,
+      options.filter,
   );
 }
 
@@ -93,7 +106,7 @@ export async function collectPageResult<T extends object>(
   globals: GlobalOptions,
   predicate: (item: T) => boolean = () => true,
 ): Promise<PageResult<T>> {
-  if (!shouldDrainPages(globals)) {
+  if (!shouldDrainPages(globals) && !hasLocalFiltering(globals)) {
     const page = await loader({
       limit: globals.limit,
       cursor: globals.cursor,
@@ -108,12 +121,34 @@ export async function collectPageResult<T extends object>(
     };
   }
 
+  if (!shouldDrainPages(globals)) {
+    const targetCount = globals.limit ?? PAGE_BATCH_SIZE;
+    let cursor = globals.cursor;
+    const collected: T[] = [];
+
+    do {
+      const page = await loader({
+        // Fetch full pages locally so lightweight filters do not require --all.
+        limit: PAGE_BATCH_SIZE,
+        cursor,
+      });
+      collected.push(...page.items.filter(predicate));
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor && collected.length < targetCount);
+
+    return {
+      items: collected.slice(0, globals.limit ?? collected.length),
+      nextCursor: cursor ?? null,
+    };
+  }
+
   let cursor = globals.cursor;
   const collected: T[] = [];
 
   do {
     const page = await loader({
-      limit: globals.limit ?? 50,
+      // Use a fixed batch size in drain mode to avoid many small-page requests.
+      limit: PAGE_BATCH_SIZE,
       cursor,
     });
     collected.push(...page.items.filter(predicate));
@@ -135,9 +170,9 @@ export function matchesIssue(
   const labels = issue.labelNames?.join(" ");
   const assigneeQuery = globals.mine ? (viewerName ?? globals.assignee) : globals.assignee;
   return (
-    matchText(issue.teamKey ?? issue.teamName, globals.team) &&
-    matchText(issue.projectId ?? issue.projectName, globals.project) &&
-    matchText(issue.cycleId ?? issue.cycleName, globals.cycle) &&
+    matchAnyText(globals.team, issue.teamKey, issue.teamName) &&
+    matchAnyText(globals.project, issue.projectId, issue.projectName) &&
+    matchAnyText(globals.cycle, issue.cycleId, issue.cycleName) &&
     matchText(issue.stateName, globals.state) &&
     matchText(issue.assigneeName, assigneeQuery) &&
     matchText(labels, globals.label) &&
@@ -149,7 +184,7 @@ export function matchesIssue(
 export function matchesProject(project: ProjectRecord, globals: GlobalOptions): boolean {
   return (
     matchText(project.state, globals.status) &&
-    matchText(project.id ?? project.name, globals.project) &&
+    matchAnyText(globals.project, project.id, project.name) &&
     runFilterExpression(project, globals.filter)
   );
 }
@@ -169,7 +204,7 @@ export function matchesCustomer(
 
 export function matchesCustomerNeed(need: CustomerNeedRecord, globals: GlobalOptions): boolean {
   return (
-    matchText(need.customerId ?? need.customerName, globals.project) &&
+    matchAnyText(globals.project, need.projectId, need.projectName) &&
     (globals.priority ? String(need.priority) === String(globals.priority) : true) &&
     runFilterExpression(need, globals.filter)
   );
@@ -180,7 +215,7 @@ export function matchesMilestone(
   globals: GlobalOptions,
 ): boolean {
   return (
-    matchText(milestone.projectId ?? milestone.projectName, globals.project) &&
+    matchAnyText(globals.project, milestone.projectId, milestone.projectName) &&
     matchText(milestone.status, globals.status) &&
     runFilterExpression(milestone, globals.filter)
   );
@@ -188,7 +223,7 @@ export function matchesMilestone(
 
 export function matchesProjectUpdate(update: ProjectUpdateRecord, globals: GlobalOptions): boolean {
   return (
-    matchText(update.projectId ?? update.projectName, globals.project) &&
+    matchAnyText(globals.project, update.projectId, update.projectName) &&
     matchText(update.health, globals.status) &&
     runFilterExpression(update, globals.filter)
   );

@@ -495,9 +495,12 @@ export function createProgram(authManager = new AuthManager()): Command {
 
   const sessionGateway = async (cmd: Command) => (await openSessionForCommand(cmd)).gateway;
 
-  const resolveViewerName = async (cmd: Command): Promise<string | undefined> => {
+  const resolveViewerName = async (
+    cmd: Command,
+    options?: { readonly forceMine?: boolean },
+  ): Promise<string | undefined> => {
     const globals = getGlobalOptions(cmd);
-    if (!globals.mine && globals.assignee !== "me") {
+    if (!options?.forceMine && !globals.mine && globals.assignee !== "me") {
       return undefined;
     }
 
@@ -1233,7 +1236,7 @@ export function createProgram(authManager = new AuthManager()): Command {
       const globals = getGlobalOptions(cmd);
 
       try {
-        const viewerName = await resolveViewerName(cmd);
+        const viewerName = await resolveViewerName(cmd, { forceMine: true });
         const gateway = await sessionGateway(cmd);
         const data = await collectPageResult(
           (options) => gateway.listIssues(options),
