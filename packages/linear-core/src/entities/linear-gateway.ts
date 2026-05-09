@@ -129,6 +129,8 @@ async function toIssue(record: SdkIssueLike): Promise<IssueRecord> {
       ),
     ]);
 
+  const childrenCount = children.length;
+
   return {
     id: record.id,
     number: record.number,
@@ -157,9 +159,9 @@ async function toIssue(record: SdkIssueLike): Promise<IssueRecord> {
     labelNames: labels
       .map((label) => label.name)
       .filter((value): value is string => typeof value === "string"),
-    childCount: children.length,
-    childrenCount: children.length,
-    hasChildren: children.length > 0,
+    childCount: childrenCount,
+    childrenCount,
+    hasChildren: childrenCount > 0,
     relationCount: relations.length,
     url: record.url,
     createdAt: toDateString(record.createdAt),
