@@ -111,4 +111,95 @@ describe("help output", () => {
     expect(myWorkHelp).toContain("assigned");
     expect(triageHelp).toContain("triage");
   });
+
+  test("subcommands surface filters, examples, and input field hints", () => {
+    const program = createProgram();
+    const issuesCommand = program.commands.find((command) => command.name() === "issues");
+    const issuesListCommand = issuesCommand?.commands.find((command) => command.name() === "list");
+    const issuesCreateCommand = issuesCommand?.commands.find(
+      (command) => command.name() === "create",
+    );
+    const issuesUpdateCommand = issuesCommand?.commands.find(
+      (command) => command.name() === "update",
+    );
+    const projectsCommand = program.commands.find((command) => command.name() === "projects");
+    const projectsCreateCommand = projectsCommand?.commands.find(
+      (command) => command.name() === "create",
+    );
+    const customersCommand = program.commands.find((command) => command.name() === "customers");
+    const customersListCommand = customersCommand?.commands.find(
+      (command) => command.name() === "list",
+    );
+
+    const issuesListHelp = captureRenderedHelp(issuesListCommand);
+    const issuesCreateHelp = captureRenderedHelp(issuesCreateCommand);
+    const issuesUpdateHelp = captureRenderedHelp(issuesUpdateCommand);
+    const projectsCreateHelp = captureRenderedHelp(projectsCreateCommand);
+    const customersListHelp = captureRenderedHelp(customersListCommand);
+
+    expect(issuesListHelp).toContain("Filters, pagination, and output");
+    expect(issuesListHelp).toContain("--team");
+    expect(issuesListHelp).toContain("--limit");
+    expect(issuesListHelp).toContain("--all");
+    expect(issuesListHelp).toContain("Examples:");
+    expect(issuesListHelp).toContain("linear issues list");
+
+    expect(issuesCreateHelp).toContain("Required input fields");
+    expect(issuesCreateHelp).toContain("teamId");
+    expect(issuesCreateHelp).toContain("IssueCreateInput");
+    expect(issuesCreateHelp).toContain("schema.graphql");
+
+    expect(issuesUpdateHelp).toContain("Examples:");
+    expect(issuesUpdateHelp).toContain("linear issues update");
+    expect(issuesUpdateHelp).toContain("IssueUpdateInput");
+
+    expect(projectsCreateHelp).toContain("Required input fields: name");
+    expect(projectsCreateHelp).toContain("ProjectCreateInput");
+
+    expect(customersListHelp).toContain("Filters, pagination, and output");
+    expect(customersListHelp).toContain("linear customers list");
+  });
+
+  test("list help only advertises options that the handler honors", () => {
+    const program = createProgram();
+
+    const findCustomHelpBlock = (entity: string): string => {
+      const command = program.commands.find((c) => c.name() === entity);
+      const list = command?.commands.find((c) => c.name() === "list");
+      const rendered = captureRenderedHelp(list);
+      const headingMatch = rendered.match(
+        /(Filters[^\n]*|Pagination and output|Output)\s*\(inherited globals\):/,
+      );
+      if (!headingMatch || headingMatch.index === undefined) {
+        return "";
+      }
+      const tail = rendered.slice(headingMatch.index);
+      const examplesIndex = tail.indexOf("Examples:");
+      return examplesIndex === -1 ? tail : tail.slice(0, examplesIndex);
+    };
+
+    const cyclesBlock = findCustomHelpBlock("cycles");
+    expect(cyclesBlock).toContain("Pagination and output");
+    expect(cyclesBlock).toContain("--limit");
+    expect(cyclesBlock).not.toContain("--team <key>");
+    expect(cyclesBlock).not.toContain("--all");
+    expect(cyclesBlock).not.toContain("--filter <expr>");
+
+    const templatesBlock = findCustomHelpBlock("templates");
+    expect(templatesBlock).toContain("Output (inherited globals):");
+    expect(templatesBlock).not.toContain("--limit");
+    expect(templatesBlock).not.toContain("--cursor");
+    expect(templatesBlock).not.toContain("--team <key>");
+
+    const labelsBlock = findCustomHelpBlock("labels");
+    expect(labelsBlock).not.toContain("--team <key>");
+    expect(labelsBlock).not.toContain("--all");
+    expect(labelsBlock).toContain("--limit");
+
+    const projectsBlock = findCustomHelpBlock("projects");
+    expect(projectsBlock).toContain("--status");
+    expect(projectsBlock).toContain("--all");
+    expect(projectsBlock).not.toContain("--team <key>");
+    expect(projectsBlock).not.toContain("--assignee");
+  });
 });
