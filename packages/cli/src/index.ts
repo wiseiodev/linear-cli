@@ -56,10 +56,10 @@ import { renderEnvelope } from "./formatters/output.js";
 import { issueBranchHelpText, issuesHelpText, rootHelpText } from "./help/root-help.js";
 import { getGlobalOptions } from "./runtime/options.js";
 import {
+  buildIssueMatcher,
   collectPageResult,
   matchesCustomer,
   matchesCustomerNeed,
-  matchesIssue,
   matchesMilestone,
   matchesNotification,
   matchesProject,
@@ -317,6 +317,16 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--label <name>", "Label filter")
     .option("--priority <value>", "Priority filter")
     .option("--status <name>", "Status or health filter")
+    .option("--query <text>", "Free-text search across identifier, title, and description")
+    .option(
+      "--updated-after <date>",
+      "Only items updated on/after the date (ISO 8601 date or relative duration like -P7D)",
+    )
+    .option(
+      "--created-after <date>",
+      "Only items created on/after the date (ISO 8601 date or relative duration like -P7D)",
+    )
+    .option("--no-parent", "Only list top-level issues with no parent")
     .option("--filter <expr>", "Lightweight filter expression, e.g. estimate>2")
     .option("--sort <field>", "Sort by a field, prefix with - for descending")
     .option("--view <preset>", "Human output preset: table | detail | dense")
@@ -527,10 +537,11 @@ export function createProgram(authManager = new AuthManager()): Command {
         const viewerName = await resolveViewerName(cmd);
         const gateway = await sessionGateway(cmd);
         const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
+        const matcher = buildIssueMatcher(globals, viewerName);
         return collectPageResult(
           (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           globals,
-          (issue) => matchesIssue(issue, globals, viewerName),
+          matcher,
         );
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getIssue(id),
@@ -1252,13 +1263,12 @@ export function createProgram(authManager = new AuthManager()): Command {
         const viewerName = await resolveViewerName(cmd, { forceMine: true });
         const gateway = await sessionGateway(cmd);
         const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
+        const mineGlobals = { ...globals, mine: true };
+        const matcher = buildIssueMatcher(mineGlobals, viewerName);
         const data = await collectPageResult(
           (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
-          {
-            ...globals,
-            mine: true,
-          },
-          (issue) => matchesIssue(issue, { ...globals, mine: true }, viewerName),
+          mineGlobals,
+          matcher,
         );
         renderEnvelope(successEnvelope("issues", "list", data), globals);
       } catch (error) {
@@ -1284,12 +1294,12 @@ export function createProgram(authManager = new AuthManager()): Command {
       try {
         const gateway = await sessionGateway(cmd);
         const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
+        const matcher = buildIssueMatcher(globals);
         const data = await collectPageResult(
           (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           globals,
           (issue) =>
-            matchesIssue(issue, globals) &&
-            (!issue.assigneeName || /triage/i.test(issue.stateName ?? "")),
+            matcher(issue) && (!issue.assigneeName || /triage/i.test(issue.stateName ?? "")),
         );
         renderEnvelope(successEnvelope("issues", "list", data), globals);
       } catch (error) {
