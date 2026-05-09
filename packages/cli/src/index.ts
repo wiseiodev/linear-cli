@@ -49,6 +49,7 @@ import { runLinearTui } from "@wiseiodev/tui";
 import { Command } from "commander";
 import open from "open";
 import { runInteractiveOAuthLogin } from "./auth/login.js";
+import { type AuthStatusReport, buildAuthStatusReport } from "./auth/status-report.js";
 import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
 import { issueBranchHelpText, issuesHelpText, rootHelpText } from "./help/root-help.js";
@@ -252,6 +253,39 @@ function isNotificationUpdatePayload(value: unknown): value is SdkNotificationUp
   return isNonEmptyRecord(value);
 }
 
+function printAuthStatusHuman(report: AuthStatusReport): void {
+  const userCell = report.user ? `${report.user.name} <${report.user.email}>` : "-";
+  const workspaceCell = report.workspace
+    ? `${report.workspace.name} (${report.workspace.urlKey})`
+    : "-";
+  const teamCell = report.defaultTeam
+    ? `${report.defaultTeam.key} — ${report.defaultTeam.name}`
+    : "not set";
+
+  console.table([
+    {
+      user: userCell,
+      workspace: workspaceCell,
+      defaultTeam: teamCell,
+    },
+  ]);
+
+  console.table([
+    {
+      profile: report.profile,
+      method: report.method ?? "-",
+      hasApiKey: report.hasApiKey,
+      hasAccessToken: report.hasAccessToken,
+      oauthConfigured: report.oauthConfigured,
+      hasRefreshToken: report.hasRefreshToken,
+      expiresAt: report.expiresAt ?? "-",
+      expired: report.expired,
+      scopes: report.scopes ? report.scopes.join(",") : "-",
+      redirectUri: report.redirectUri ?? "-",
+    },
+  ]);
+}
+
 async function readSecret(prompt: string): Promise<string> {
   const rl = createInterface({
     input: process.stdin,
@@ -386,8 +420,16 @@ export function createProgram(authManager = new AuthManager()): Command {
     .action(async (_, cmd) => {
       const globals = getGlobalOptions(cmd);
       try {
-        const status = await authManager.status(globals.profile);
-        renderEnvelope(successEnvelope("auth", "status", status), globals);
+        const report = await buildAuthStatusReport(authManager, globals.profile);
+        if (globals.json) {
+          renderEnvelope(successEnvelope("auth", "status", report), globals);
+          return;
+        }
+
+        if (!globals.quiet) {
+          console.log("auth.status");
+        }
+        printAuthStatusHuman(report);
       } catch (error) {
         const normalized = normalizeError(error);
         renderEnvelope(
