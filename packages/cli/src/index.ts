@@ -526,9 +526,9 @@ export function createProgram(authManager = new AuthManager()): Command {
         const globals = getGlobalOptions(cmd);
         const viewerName = await resolveViewerName(cmd);
         const gateway = await sessionGateway(cmd);
+        const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
         return collectPageResult(
-          (options) =>
-            gateway.listIssues(globals.parent ? { ...options, parent: globals.parent } : options),
+          (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           globals,
           (issue) => matchesIssue(issue, globals, viewerName),
         );
@@ -1251,8 +1251,9 @@ export function createProgram(authManager = new AuthManager()): Command {
       try {
         const viewerName = await resolveViewerName(cmd, { forceMine: true });
         const gateway = await sessionGateway(cmd);
+        const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
         const data = await collectPageResult(
-          (options) => gateway.listIssues(options),
+          (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           {
             ...globals,
             mine: true,
@@ -1282,8 +1283,9 @@ export function createProgram(authManager = new AuthManager()): Command {
 
       try {
         const gateway = await sessionGateway(cmd);
+        const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
         const data = await collectPageResult(
-          (options) => gateway.listIssues(options),
+          (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           globals,
           (issue) =>
             matchesIssue(issue, globals) &&

@@ -22,7 +22,7 @@ This change ships a CLI flag (`linear issues list --parent`) plus a thin gateway
 
 - `packages/linear-core/src/entities/linear-gateway.ts` — `listIssues` now threads `parent` into the SDK filter via the new `resolveIssueId` helper.
 - `packages/linear-core/src/types/public.ts` — `ListOptions.parent` added so the gateway accepts the constraint.
-- `packages/cli/src/index.ts` — global `--parent <id-or-identifier>` registered; `issues list` resolves the parent UUID once before paginating.
+- `packages/cli/src/index.ts` — global `--parent <id-or-identifier>` registered; `issues list`, `my-work`, and `triage` each pre-resolve the parent identifier to a UUID once via `gateway.resolveIssueId(...)` before entering the `collectPageResult` paging loop, so identifier lookups never repeat per page.
 - `packages/cli/src/runtime/options.ts` — `parent` added to `GlobalOptions`.
 - `packages/cli/src/help/root-help.ts` — example added: `linear issues list --parent ANN-123 --json`.
 - `packages/linear-core/tests/linear-gateway.test.ts` — two new tests covering the parent filter pipeline.
