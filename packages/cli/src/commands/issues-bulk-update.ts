@@ -60,6 +60,12 @@ export interface BulkUpdateData {
 }
 
 const DEFAULT_CONCURRENCY = 3;
+const MAX_CONCURRENCY = 10;
+
+interface StdinLike extends AsyncIterable<string | Buffer> {
+  readonly isTTY?: boolean;
+  setEncoding(encoding: BufferEncoding): void;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
@@ -69,11 +75,14 @@ function parseConcurrency(value: number | string | undefined): number {
   if (value === undefined) {
     return DEFAULT_CONCURRENCY;
   }
-  const parsed = typeof value === "number" ? value : Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 1) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
     throw new Error("--concurrency must be a positive integer.");
   }
-  return Math.floor(parsed);
+  if (parsed > MAX_CONCURRENCY) {
+    throw new Error(`--concurrency must be ${MAX_CONCURRENCY} or less.`);
+  }
+  return parsed;
 }
 
 function parseIds(value: string): string[] {
@@ -90,24 +99,27 @@ function parseIds(value: string): string[] {
   return out;
 }
 
-async function readStdin(): Promise<string> {
-  if (process.stdin.isTTY) {
+async function readStdin(stdin: StdinLike): Promise<string> {
+  if (stdin.isTTY) {
     throw new Error("Cannot read --input - because stdin is a TTY.");
   }
   let buffer = "";
-  process.stdin.setEncoding("utf8");
-  for await (const chunk of process.stdin) {
+  stdin.setEncoding("utf8");
+  for await (const chunk of stdin) {
     buffer += chunk;
   }
   return buffer;
 }
 
-export async function readBulkInput(options: BulkUpdateRawOptions): Promise<unknown> {
+export async function readBulkInput(
+  options: BulkUpdateRawOptions,
+  stdin: StdinLike = process.stdin,
+): Promise<unknown> {
   if (options.input === "-") {
     if (options.inputFile) {
       throw new Error("Use either --input or --input-file, not both.");
     }
-    const text = await readStdin();
+    const text = await readStdin(stdin);
     if (text.trim().length === 0) {
       throw new Error("Input was empty.");
     }
@@ -273,8 +285,9 @@ export function registerIssuesBulkUpdate(issuesCommand: Command, authManager: Au
       "JSON object (shared-payload) or array of {id, ...fields} (per-issue)",
     )
     .option("--dry-run", "Preview without writing; pre-resolves each id")
-    .option("--concurrency <n>", `Max parallel updates (default ${DEFAULT_CONCURRENCY})`, (value) =>
-      Number.parseInt(value, 10),
+    .option(
+      "--concurrency <n>",
+      `Max parallel updates, 1-${MAX_CONCURRENCY} (default ${DEFAULT_CONCURRENCY})`,
     )
     .action(async (opts: BulkUpdateRawOptions, cmd: Command) => {
       const globals = getGlobalOptions(cmd);

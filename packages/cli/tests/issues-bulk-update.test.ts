@@ -1,12 +1,14 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { Readable } from "node:stream";
 import type { IssueRecord, SdkIssueUpdateInput } from "@wiseiodev/linear-core";
 import { LinearCoreError } from "@wiseiodev/linear-core";
 import { describe, expect, test } from "vitest";
 import {
   exitCodeForBulk,
   parseBulkUpdateInput,
+  readBulkInput,
   runBulkUpdate,
 } from "../src/commands/issues-bulk-update.js";
 
@@ -136,6 +138,43 @@ describe("parseBulkUpdateInput", () => {
         concurrency: "0",
       }),
     ).rejects.toThrow(/positive integer/);
+  });
+
+  test("rejects fractional --concurrency", async () => {
+    await expect(
+      parseBulkUpdateInput({
+        ids: "ANN-1",
+        input: '{"priority":2}',
+        concurrency: "2.5",
+      }),
+    ).rejects.toThrow(/positive integer/);
+  });
+
+  test("rejects excessive --concurrency", async () => {
+    await expect(
+      parseBulkUpdateInput({
+        ids: "ANN-1",
+        input: '{"priority":2}',
+        concurrency: "11",
+      }),
+    ).rejects.toThrow(/10 or less/);
+  });
+});
+
+describe("readBulkInput", () => {
+  test("parses JSON from stdin when --input is -", async () => {
+    const stdin = Readable.from(['{"priority":2}']);
+
+    const parsed = await readBulkInput({ input: "-" }, stdin);
+
+    expect(parsed).toEqual({ priority: 2 });
+  });
+
+  test("rejects stdin input when stdin is a TTY", async () => {
+    const stdin = Readable.from([]);
+    Object.defineProperty(stdin, "isTTY", { value: true });
+
+    await expect(readBulkInput({ input: "-" }, stdin)).rejects.toThrow(/stdin is a TTY/);
   });
 });
 
