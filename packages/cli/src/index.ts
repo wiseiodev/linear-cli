@@ -22,7 +22,6 @@ import type {
   SdkIssueInput,
   SdkIssueLabelInput,
   SdkIssueLabelUpdateInput,
-  SdkIssueUpdateInput,
   SdkNotificationUpdateInput,
   SdkProjectInput,
   SdkProjectMilestoneInput,
@@ -49,6 +48,8 @@ import { runLinearTui } from "@wiseiodev/tui";
 import { Command } from "commander";
 import open from "open";
 import { runInteractiveOAuthLogin } from "./auth/login.js";
+import { isIssueUpdateInput } from "./commands/issue-guards.js";
+import { registerIssuesBulkUpdate } from "./commands/issues-bulk-update.js";
 import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
 import { issueBranchHelpText, issuesHelpText, rootHelpText } from "./help/root-help.js";
@@ -113,10 +114,6 @@ function isIssueCreateInput(value: unknown): value is SdkIssueInput {
     hasString(value, "teamId") &&
     (hasString(value, "title") || hasString(value, "templateId"))
   );
-}
-
-function isIssueUpdateInput(value: unknown): value is SdkIssueUpdateInput {
-  return isRecord(value) && Object.keys(value).length > 0;
 }
 
 function isInitiativeCreateInput(value: unknown): value is SdkInitiativeInput {
@@ -576,6 +573,10 @@ export function createProgram(authManager = new AuthManager()): Command {
     .find((command) => command.name() === "create")
     ?.option("--template <id-or-name>", "Apply a template by exact id or exact name");
   issuesCommand?.addHelpText("after", issuesHelpText);
+
+  if (issuesCommand) {
+    registerIssuesBulkUpdate(issuesCommand, authManager);
+  }
 
   issuesCommand
     ?.command("branch")
