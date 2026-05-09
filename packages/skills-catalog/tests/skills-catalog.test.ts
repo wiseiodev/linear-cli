@@ -57,8 +57,14 @@ describe("skills catalog", () => {
   });
 
   test("ships linear-cli skill content with CLI usage examples", async () => {
+    const skill = getSkill("linear-cli");
+    if (!skill) {
+      throw new Error("Expected linear-cli skill in catalog");
+    }
+
+    const repoRelativePath = skill.repoPath.replace("wiseiodev/linear-cli/", "");
     const content = await readFile(
-      new URL("../../../assets/skills/linear-cli/SKILL.md", import.meta.url),
+      new URL(`../../../${repoRelativePath}/SKILL.md`, import.meta.url),
       "utf8",
     );
 
