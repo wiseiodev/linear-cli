@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>#3 — Support parent/child filtering in `issues list`</title>
+    <style>
+      :root {
+        --bg: #0a0b0d; --surface: #15181c; --surface-2: #1b1f24;
+        --line: #24292f; --line-soft: #1f2428;
+        --text: #e7eaee; --text-dim: #8a9099; --text-mute: #5b6470;
+        --accent: #1f7aed; --good: #4ade80; --good-bg: #0f2e1e;
+        --warn: #fbbf24; --warn-bg: #3a2b06; --bad: #f87171; --bad-bg: #3a1414;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: var(--bg); }
+      body { color: var(--text); font: 14px/1.55 "Inter", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+      .page { max-width: 960px; margin: 40px auto; padding: 40px 44px 32px; background: var(--bg); }
+      .top { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 20px; margin-bottom: 28px; border-bottom: 1px solid var(--line-soft); }
+      .eyebrow { color: var(--text-mute); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+      .top h1 { margin: 6px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+      .top .meta { text-align: right; color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+      .top .meta code { color: var(--text); }
+      .card { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; }
+      .card h2 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+      .card .sub { color: var(--text-dim); font-size: 12px; margin-bottom: 14px; }
+      .hero-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 6px; }
+      .hero-cell { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; }
+      .hero-cell .k { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+      .hero-cell .v { margin-top: 4px; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+      .hero-cell.good .v { color: var(--good); }
+      .hero-cell.warn .v { color: var(--warn); }
+      .hero-cell.bad .v { color: var(--bad); }
+      ul, ol { margin: 0; padding-left: 18px; }
+      li { margin-bottom: 4px; }
+      li::marker { color: var(--text-mute); }
+      code { font: 12px ui-monospace, Menlo, monospace; background: var(--surface-2); color: var(--text); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line-soft); }
+      pre { font: 12px/1.55 ui-monospace, Menlo, monospace; background: var(--surface-2); color: var(--text); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--line-soft); overflow-x: auto; white-space: pre-wrap; word-break: break-word; margin: 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+      th { color: var(--text-mute); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; }
+      tr:last-child td { border-bottom: none; }
+      .pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+      .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .pill.good { color: var(--good); background: var(--good-bg); border-color: rgba(74,222,128,0.25); }
+      .cta { display: inline-block; padding: 8px 14px; background: var(--accent); color: #fff; border-radius: 8px; font-weight: 600; font-size: 13px; }
+      .checklist { list-style: none; padding-left: 0; }
+      .checklist li { padding: 6px 0 6px 26px; position: relative; border-bottom: 1px solid var(--line-soft); }
+      .checklist li:last-child { border-bottom: none; }
+      .checklist li::before { content: "\2713"; position: absolute; left: 0; top: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--good-bg); color: var(--good); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(74,222,128,0.25); }
+      .foot { display: flex; justify-content: space-between; color: var(--text-mute); font-size: 11px; margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+    </style>
+  </head>
+  <body>
+    <section class="page">
+      <div class="top">
+        <div>
+          <div class="eyebrow">GitHub issue &middot; #3</div>
+          <h1>#3 &middot; Support parent/child filtering in <code>issues list</code></h1>
+        </div>
+        <div class="meta">
+          <div>2026-05-08</div>
+          <div><code>wiseiodev/linear-cli</code></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>What shipped</h2>
+        <div class="sub">Plain-language summary of what landed in this slice.</div>
+        <ul>
+          <li>New <code>--parent &lt;id-or-identifier&gt;</code> CLI flag for <code>linear issues list</code>, accepting a Linear identifier (e.g. <code>BB-418</code>) or a UUID.</li>
+          <li>Gateway threads the parent constraint into the SDK as <code>filter: { parent: { id: { eq: &lt;uuid&gt; } } }</code>, so filtering happens server-side instead of paginating the workspace.</li>
+          <li>Identifier&rarr;UUID resolution centralized in a new <code>LinearGateway.resolveIssueId</code> helper that short-circuits when the input already looks like a UUID.</li>
+          <li>Filter merge (rather than overwrite) preserves any future server-side filter additions.</li>
+          <li>Added an example to <code>issues --help</code>: <code>linear issues list --parent ANN-123 --json</code>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Files changed</h2>
+        <div class="sub">From <code>git show --stat HEAD</code>.</div>
+        <pre> .reports/issue-3-qa.md                              | 32 +++++++++++++++++
+ packages/cli/src/help/root-help.ts                  |  1 +
+ packages/cli/src/index.ts                           |  7 +++-
+ packages/cli/src/runtime/options.ts                 |  2 ++
+ packages/linear-core/src/entities/linear-gateway.ts | 18 +++++++++-
+ packages/linear-core/src/types/public.ts            |  1 +
+ packages/linear-core/tests/linear-gateway.test.ts   | 42 ++++++++++++++++++++++
+ 7 files changed, 101 insertions(+), 2 deletions(-)</pre>
+      </div>
+
+      <div class="card">
+        <h2>Quality gates</h2>
+        <div class="sub">All gates green via <code>pnpm verify</code> &mdash; 90 tests passed across 4 packages.</div>
+        <table>
+          <thead><tr><th>Gate</th><th>Command</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Format + lint</td><td><code>biome check --write</code></td><td><span class="pill good">pass</span></td></tr>
+            <tr><td>Typecheck</td><td><code>turbo run typecheck</code></td><td><span class="pill good">pass</span></td></tr>
+            <tr><td>Tests</td><td><code>turbo run test</code></td><td><span class="pill good">pass</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Adversarial review</h2>
+        <div class="sub">Two-reviewer debate. Both reviewers converged independently on the same issues; all majors fixed before commit.</div>
+        <div class="hero-grid">
+          <div class="hero-cell"><div class="k">Iterations</div><div class="v">1</div></div>
+          <div class="hero-cell bad"><div class="k">Critical / Major</div><div class="v">0 / 0</div></div>
+          <div class="hero-cell warn"><div class="k">Minor</div><div class="v">2</div></div>
+          <div class="hero-cell good"><div class="k">Nitpick</div><div class="v">2</div></div>
+        </div>
+        <div style="margin-top: 14px;">
+          <ul>
+            <li><strong>Fixed</strong> &mdash; Double-resolution of parent id (CLI was pre-resolving and gateway was re-resolving). CLI now passes <code>globals.parent</code> through; gateway owns resolution.</li>
+            <li><strong>Fixed</strong> &mdash; Filter assignment clobbered any pre-existing <code>filter</code> on <code>variables</code>. Now merges via spread.</li>
+            <li><strong>Fixed</strong> &mdash; Removed dead <code>parentId</code> field from <code>ListQuery</code>.</li>
+            <li><strong>Deferred (minor)</strong> &mdash; Wrap SDK error from <code>client.issue()</code> with a clearer "Issue not found" message. Pre-existing CLI error envelope still surfaces the SDK message; deferring keeps scope tight.</li>
+            <li><strong>Deferred (minor)</strong> &mdash; <code>--parent</code> registered as global option, mirroring existing <code>--project</code>/<code>--cycle</code> pattern.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>linear-cli &middot; work</span>
+        <span>Page 1 of 2</span>
+      </div>
+    </section>
+
+    <section class="page">
+      <div class="top">
+        <div>
+          <div class="eyebrow">Proof of work</div>
+          <h1>Self-QA &middot; #3</h1>
+        </div>
+        <div class="meta">
+          <div>2026-05-08</div>
+          <div><code>6c9ed83</code></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Self-QA recording</h2>
+        <div class="sub">No browser surface &mdash; CLI flag plus gateway helper. Verified via unit tests and commit inspection.</div>
+        <p>See <a href="./issue-3-qa.md"><code>./issue-3-qa.md</code></a> for the full QA fallback document.</p>
+      </div>
+
+      <div class="card">
+        <h2>Scenarios covered</h2>
+        <div class="sub">Golden path and at least one edge case per acceptance criterion.</div>
+        <ul>
+          <li>Identifier input (<code>ENG-42</code>): gateway resolves to UUID via <code>client.issue()</code>, then sends <code>filter.parent.id.eq = &lt;uuid&gt;</code>.</li>
+          <li>UUID input: short-circuits the regex check, no extra API call, filter still applied.</li>
+          <li>No <code>--parent</code> argument: existing <code>listIssues</code> behaviour unchanged (covered by existing test).</li>
+          <li><code>resolveIssueId</code> unit-tested for both branches (UUID identity, identifier lookup).</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Acceptance criteria</h2>
+        <div class="sub">Every box ticked before the commit was made.</div>
+        <ul class="checklist">
+          <li>Add a way to list child issues of a parent from <code>linear issues list</code>.</li>
+          <li>Accept both Linear identifiers (e.g. <code>BB-418</code>) and internal UUIDs.</li>
+          <li>Surface parent filter in <code>--help</code> via global options + an example in the issues help text.</li>
+          <li>JSON output unchanged in shape; <code>parentId</code> already present on <code>IssueRecord</code>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Commit</h2>
+        <div class="sub">Local first; pushed in the next step.</div>
+        <p style="margin: 0 0 10px;"><span class="cta">6c9ed83</span> <code style="margin-left: 8px;">6c9ed834cd16f8c8ceebb0f7d958e1727d349750</code></p>
+        <pre>feat(cli): add --parent filter to issues list
+
+Threads a parent issue identifier or UUID through `linear issues list`
+to the Linear SDK as `{ filter: { parent: { id: { eq: ... } } } }`.
+The gateway resolves identifiers (e.g. ANN-123) to UUIDs once and
+merges into any existing filter so future server-side constraints
+compose cleanly.
+
+Refs: #3</pre>
+      </div>
+
+      <div class="foot">
+        <span>linear-cli &middot; work</span>
+        <span>Page 2 of 2</span>
+      </div>
+    </section>
+  </body>
+</html>
