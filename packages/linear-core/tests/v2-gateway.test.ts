@@ -358,9 +358,12 @@ describe("LinearGateway v2", () => {
     expect(issue.teamKey).toBe("ENG");
     expect(issue.milestoneName).toBe("Beta");
     expect(issue.parentIdentifier).toBe("ENG-0");
+    expect(issue.parentTitle).toBe("Parent issue");
     expect(issue.labelNames).toEqual(["Bug"]);
     expect(issue.labels).toEqual([{ id: "label_1", name: "Bug", color: "#ff0000" }]);
     expect(issue.childCount).toBe(1);
+    expect(issue.childrenCount).toBe(1);
+    expect(issue.hasChildren).toBe(true);
     expect(issue.relationCount).toBe(1);
     expect(issue.estimate).toBe(3);
     expect(issue.dueDate).toBe("2026-04-01");

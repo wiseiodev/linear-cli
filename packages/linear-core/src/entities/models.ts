@@ -32,9 +32,12 @@ export interface IssueRecord {
   readonly milestoneName?: string;
   readonly parentId?: string;
   readonly parentIdentifier?: string;
+  readonly parentTitle?: string;
   readonly labelNames?: readonly string[];
   readonly labels?: readonly IssueLabelSummary[];
   readonly childCount?: number;
+  readonly childrenCount?: number;
+  readonly hasChildren?: boolean;
   readonly relationCount?: number;
   readonly url: string;
   readonly createdAt: string;
