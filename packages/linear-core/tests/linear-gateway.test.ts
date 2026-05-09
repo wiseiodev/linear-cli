@@ -21,6 +21,15 @@ function createTestClient(): SdkLinearClient {
             url: "https://linear.app/issue/ENG-1",
             createdAt: new Date("2024-01-01T00:00:00.000Z"),
             updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+            completedAt: new Date("2024-01-03T00:00:00.000Z"),
+            canceledAt: new Date("2024-01-04T00:00:00.000Z"),
+            archivedAt: new Date("2024-01-05T00:00:00.000Z"),
+            creatorId: "user_2",
+            creator: Promise.resolve({
+              id: "user_2",
+              name: "Sam Creator",
+              displayName: "Sam",
+            }),
             state: Promise.resolve({
               id: "s_1",
               name: "In Progress",
@@ -47,6 +56,15 @@ function createTestClient(): SdkLinearClient {
         url: "https://linear.app/issue/ENG-1",
         createdAt: new Date("2024-01-01T00:00:00.000Z"),
         updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+        completedAt: new Date("2024-01-03T00:00:00.000Z"),
+        canceledAt: new Date("2024-01-04T00:00:00.000Z"),
+        archivedAt: new Date("2024-01-05T00:00:00.000Z"),
+        creatorId: "user_2",
+        creator: Promise.resolve({
+          id: "user_2",
+          name: "Sam Creator",
+          displayName: "Sam",
+        }),
         state: Promise.resolve({
           id: "s_1",
           name: "In Progress",
@@ -524,6 +542,13 @@ describe("LinearGateway", () => {
     expect(result.items[0]?.identifier).toBe("ENG-1");
     expect(result.items[0]?.branchName).toBe("eng-1-fix-parser");
     expect(result.items[0]?.stateName).toBe("In Progress");
+    expect(result.items[0]?.stateId).toBe("s_1");
+    expect(result.items[0]?.stateType).toBe("started");
+    expect(result.items[0]?.creatorId).toBe("user_2");
+    expect(result.items[0]?.creatorName).toBe("Sam");
+    expect(result.items[0]?.completedAt).toBe("2024-01-03T00:00:00.000Z");
+    expect(result.items[0]?.canceledAt).toBe("2024-01-04T00:00:00.000Z");
+    expect(result.items[0]?.archivedAt).toBe("2024-01-05T00:00:00.000Z");
     expect(result.nextCursor).toBe("cursor-2");
   });
 
@@ -543,6 +568,13 @@ describe("LinearGateway", () => {
     expect(result.identifier).toBe("ENG-1");
     expect(result.description).toBe("Parser crashes when a trailing comma is present.");
     expect(result.stateName).toBe("In Progress");
+    expect(result.stateId).toBe("s_1");
+    expect(result.stateType).toBe("started");
+    expect(result.creatorId).toBe("user_2");
+    expect(result.creatorName).toBe("Sam");
+    expect(result.completedAt).toBe("2024-01-03T00:00:00.000Z");
+    expect(result.canceledAt).toBe("2024-01-04T00:00:00.000Z");
+    expect(result.archivedAt).toBe("2024-01-05T00:00:00.000Z");
   });
 
   test("archives cycle via delete operation", async () => {

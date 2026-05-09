@@ -319,7 +319,10 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--sort <field>", "Sort by a field, prefix with - for descending")
     .option("--view <preset>", "Human output preset: table | detail | dense")
     .option("--all", "Drain all pages before filtering")
-    .option("--fields <list>", "Comma-separated field selection for human output");
+    .option(
+      "--fields <list>",
+      "Comma-separated field selection (applies to JSON and human output)",
+    );
 
   const authCommand = program.command("auth").description("Authentication commands");
 

@@ -179,9 +179,32 @@ function printHumanData(data: unknown, options: GlobalOptions): void {
   console.log(String(data));
 }
 
+function projectJsonData(data: unknown, fields: readonly string[]): unknown {
+  if (Array.isArray(data)) {
+    return data.map((item) => (isRecord(item) ? pickFields(item, fields) : item));
+  }
+
+  if (isPageResult(data)) {
+    return {
+      ...data,
+      items: data.items.map((item) => (isRecord(item) ? pickFields(item, fields) : item)),
+    };
+  }
+
+  if (isRecord(data)) {
+    return pickFields(data, fields);
+  }
+
+  return data;
+}
+
 export function renderEnvelope<Data>(envelope: OutputEnvelope<Data>, options: GlobalOptions): void {
   if (options.json) {
-    console.log(JSON.stringify(envelope, null, 2));
+    const projected =
+      envelope.ok && options.fields && options.fields.length > 0
+        ? { ...envelope, data: projectJsonData(envelope.data, options.fields) }
+        : envelope;
+    console.log(JSON.stringify(projected, null, 2));
     return;
   }
 

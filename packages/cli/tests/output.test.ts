@@ -119,6 +119,39 @@ describe("renderEnvelope", () => {
     expect(logSpy).toHaveBeenCalledWith("issues.get");
   });
 
+  test("projects --json output through --fields and preserves nextCursor", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    renderEnvelope(
+      successEnvelope("issues", "list", {
+        items: [
+          {
+            id: "issue-1",
+            identifier: "ENG-1",
+            title: "Fix output formatting",
+            priority: 2,
+            stateName: "Todo",
+            stateType: "unstarted",
+            updatedAt: "2026-03-16T17:00:00.000Z",
+          },
+        ],
+        nextCursor: "cursor-2",
+      }),
+      {
+        json: true,
+        quiet: false,
+        fields: ["identifier", "stateType"],
+      },
+    );
+
+    const output = logSpy.mock.calls[0]?.[0];
+    expect(typeof output).toBe("string");
+    const parsed = JSON.parse(String(output));
+    expect(parsed.ok).toBe(true);
+    expect(parsed.data.items).toEqual([{ identifier: "ENG-1", stateType: "unstarted" }]);
+    expect(parsed.data.nextCursor).toBe("cursor-2");
+  });
+
   test("supports detail views with field selection for issue lists", () => {
     const tableSpy = vi.spyOn(console, "table").mockImplementation(() => {});
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
