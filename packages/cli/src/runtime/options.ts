@@ -21,7 +21,10 @@ export interface GlobalOptions {
   readonly view?: "table" | "detail" | "dense";
   readonly all?: boolean;
   readonly fields?: readonly string[];
+  readonly timeoutMs: number;
 }
+
+const DEFAULT_TIMEOUT_SECONDS = 30;
 
 export function getGlobalOptions(command: Command): GlobalOptions {
   const rawValue = command.optsWithGlobals();
@@ -30,6 +33,12 @@ export function getGlobalOptions(command: Command): GlobalOptions {
     ?.split(",")
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
+
+  const timeoutSeconds = readNumber(raw.timeout);
+  const timeoutMs =
+    timeoutSeconds !== undefined && timeoutSeconds > 0
+      ? timeoutSeconds * 1000
+      : DEFAULT_TIMEOUT_SECONDS * 1000;
 
   return {
     json: readBoolean(raw.json),
@@ -51,5 +60,6 @@ export function getGlobalOptions(command: Command): GlobalOptions {
     ...(readString(raw.view) ? { view: readString(raw.view) as "table" | "detail" | "dense" } : {}),
     ...(readBoolean(raw.all) ? { all: true } : {}),
     ...(fields && fields.length > 0 ? { fields } : {}),
+    timeoutMs,
   };
 }
