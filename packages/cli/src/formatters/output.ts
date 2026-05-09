@@ -122,6 +122,42 @@ function pickFields(
   return Object.fromEntries(fields.map((field) => [field, item[field]]));
 }
 
+function isSensitiveJsonKey(key: string): boolean {
+  const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return (
+    normalized.includes("apikey") ||
+    normalized.includes("password") ||
+    normalized.includes("secret") ||
+    normalized.includes("token") ||
+    normalized.includes("authorizationurl") ||
+    normalized.includes("clientid") ||
+    normalized.includes("redirecturi") ||
+    normalized.includes("scope") ||
+    normalized.includes("codeverifier")
+  );
+}
+
+function redactJsonData(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactJsonData(item));
+  }
+
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      key,
+      isSensitiveJsonKey(key) ? "[REDACTED]" : redactJsonData(entry),
+    ]),
+  );
+}
+
+function stringifyJsonOutput(value: unknown): string {
+  return JSON.stringify(redactJsonData(value), null, 2);
+}
+
 function toHumanRowsWithOptions(
   items: readonly unknown[],
   options: Pick<GlobalOptions, "fields" | "view">,
@@ -179,9 +215,32 @@ function printHumanData(data: unknown, options: GlobalOptions): void {
   console.log(String(data));
 }
 
+function projectJsonData(data: unknown, fields: readonly string[]): unknown {
+  if (Array.isArray(data)) {
+    return data.map((item) => (isRecord(item) ? pickFields(item, fields) : item));
+  }
+
+  if (isPageResult(data)) {
+    return {
+      ...data,
+      items: data.items.map((item) => (isRecord(item) ? pickFields(item, fields) : item)),
+    };
+  }
+
+  if (isRecord(data)) {
+    return pickFields(data, fields);
+  }
+
+  return data;
+}
+
 export function renderEnvelope<Data>(envelope: OutputEnvelope<Data>, options: GlobalOptions): void {
   if (options.json) {
-    console.log(JSON.stringify(envelope, null, 2));
+    const projected =
+      envelope.ok && options.fields && options.fields.length > 0
+        ? { ...envelope, data: projectJsonData(envelope.data, options.fields) }
+        : envelope;
+    console.log(stringifyJsonOutput(projected));
     return;
   }
 
@@ -196,7 +255,7 @@ export function renderEnvelope<Data>(envelope: OutputEnvelope<Data>, options: Gl
   if (isErrorEnvelope(envelope)) {
     console.error(`${envelope.entity}.${envelope.action} failed: ${envelope.error.message}`);
     if (envelope.error.details) {
-      console.error(JSON.stringify(envelope.error.details, null, 2));
+      console.error(stringifyJsonOutput(envelope.error.details));
     }
   }
 }
