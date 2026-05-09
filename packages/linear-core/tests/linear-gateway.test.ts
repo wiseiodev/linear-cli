@@ -552,6 +552,48 @@ describe("LinearGateway", () => {
     expect(result.nextCursor).toBe("cursor-2");
   });
 
+  test("passes parent filter through to SDK after resolving identifier to UUID", async () => {
+    const baseClient = createTestClient();
+    const captured: Array<Record<string, unknown>> = [];
+    const client: SdkLinearClient = {
+      ...baseClient,
+      async issue(idOrIdentifier: string) {
+        return {
+          ...(await baseClient.issue(idOrIdentifier)),
+          id: "parent-uuid-123",
+        };
+      },
+      async issues(variables: unknown) {
+        captured.push(variables as Record<string, unknown>);
+        return baseClient.issues(variables as never);
+      },
+    };
+    const gateway = new LinearGateway(client);
+
+    await gateway.listIssues({ limit: 5, parent: "ENG-42" });
+    await gateway.listIssues({
+      limit: 5,
+      parent: "11111111-2222-3333-4444-555555555555",
+    });
+
+    expect(captured[0]).toEqual({
+      first: 5,
+      filter: { parent: { id: { eq: "parent-uuid-123" } } },
+    });
+    expect(captured[1]).toEqual({
+      first: 5,
+      filter: { parent: { id: { eq: "11111111-2222-3333-4444-555555555555" } } },
+    });
+  });
+
+  test("resolveIssueId returns UUIDs unchanged and looks up identifiers", async () => {
+    const gateway = new LinearGateway(createTestClient());
+    expect(await gateway.resolveIssueId("ENG-1")).toBe("i_1");
+    expect(await gateway.resolveIssueId("11111111-2222-3333-4444-555555555555")).toBe(
+      "11111111-2222-3333-4444-555555555555",
+    );
+  });
+
   test("gets issue branch name by identifier", async () => {
     const gateway = new LinearGateway(createTestClient());
     const result = await gateway.getIssueBranchName("ENG-1");

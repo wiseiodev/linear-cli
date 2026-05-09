@@ -11,6 +11,7 @@ export interface GlobalOptions {
   readonly mine?: boolean;
   readonly project?: string;
   readonly cycle?: string;
+  readonly parent?: string;
   readonly state?: string;
   readonly assignee?: string;
   readonly label?: string;
@@ -50,6 +51,7 @@ export function getGlobalOptions(command: Command): GlobalOptions {
     ...(readBoolean(raw.mine) ? { mine: true } : {}),
     ...(readString(raw.project) ? { project: readString(raw.project) } : {}),
     ...(readString(raw.cycle) ? { cycle: readString(raw.cycle) } : {}),
+    ...(readString(raw.parent) ? { parent: readString(raw.parent) } : {}),
     ...(readString(raw.state) ? { state: readString(raw.state) } : {}),
     ...(readString(raw.assignee) ? { assignee: readString(raw.assignee) } : {}),
     ...(readString(raw.label) ? { label: readString(raw.label) } : {}),

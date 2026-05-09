@@ -79,6 +79,7 @@ export interface PageResult<T> {
 export interface ListOptions {
   readonly limit?: number;
   readonly cursor?: string | null;
+  readonly parent?: string;
 }
 
 export type ViewPreset = "table" | "detail" | "dense";

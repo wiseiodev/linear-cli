@@ -308,6 +308,10 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--mine", "Limit issue-oriented commands to items assigned to the authenticated user")
     .option("--project <id-or-name>", "Project filter")
     .option("--cycle <id-or-name>", "Cycle filter")
+    .option(
+      "--parent <id-or-identifier>",
+      "Parent issue filter (UUID or identifier like ANN-123). Lists only that issue's direct children.",
+    )
     .option("--state <name>", "State or type filter")
     .option("--assignee <name>", "Assignee filter")
     .option("--label <name>", "Label filter")
@@ -523,7 +527,8 @@ export function createProgram(authManager = new AuthManager()): Command {
         const viewerName = await resolveViewerName(cmd);
         const gateway = await sessionGateway(cmd);
         return collectPageResult(
-          (options) => gateway.listIssues(options),
+          (options) =>
+            gateway.listIssues(globals.parent ? { ...options, parent: globals.parent } : options),
           globals,
           (issue) => matchesIssue(issue, globals, viewerName),
         );

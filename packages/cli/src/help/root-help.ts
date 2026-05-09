@@ -50,6 +50,7 @@ Examples:
   linear issues --help
   linear issues list --limit 10 --json
   linear issues list --mine --state "Todo" --view detail
+  linear issues list --parent ANN-123 --json
   linear issues list --fields identifier,title,assigneeName,projectName
   linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}' --json
   linear issues bulk-update --ids ANN-1,ANN-2 --input '{"priority":2}' --dry-run --json

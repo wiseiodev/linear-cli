@@ -492,7 +492,15 @@ export class LinearGateway {
   }
 
   public async listIssues(options: ListOptions): Promise<PageResult<IssueRecord>> {
-    const connection = await this.client.issues(toListVariables(options));
+    const variables: Record<string, unknown> = toListVariables(options);
+
+    if (options.parent) {
+      const parentId = await this.resolveIssueId(options.parent);
+      const existingFilter = (variables.filter as Record<string, unknown> | undefined) ?? {};
+      variables.filter = { ...existingFilter, parent: { id: { eq: parentId } } };
+    }
+
+    const connection = await this.client.issues(variables);
 
     const items = await Promise.all(connection.nodes.map((node) => toIssue(node)));
 
@@ -500,6 +508,14 @@ export class LinearGateway {
       items,
       nextCursor: connection.pageInfo.endCursor ?? null,
     };
+  }
+
+  public async resolveIssueId(idOrIdentifier: string): Promise<string> {
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrIdentifier)) {
+      return idOrIdentifier;
+    }
+    const issue = await this.client.issue(idOrIdentifier);
+    return issue.id;
   }
 
   public async getIssue(id: string): Promise<IssueRecord> {
