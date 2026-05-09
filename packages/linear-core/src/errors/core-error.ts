@@ -55,16 +55,6 @@ const TRANSIENT_CODES: ReadonlySet<LinearCoreErrorCode> = new Set([
   "LockTimeout",
 ]);
 
-const NETWORK_CAUSE_CODES: ReadonlySet<string> = new Set([
-  "ENOTFOUND",
-  "ECONNREFUSED",
-  "ECONNRESET",
-  "EAI_AGAIN",
-  "EHOSTUNREACH",
-  "ENETUNREACH",
-  "EPIPE",
-]);
-
 const TIMEOUT_CAUSE_CODES: ReadonlySet<string> = new Set([
   "UND_ERR_CONNECT_TIMEOUT",
   "UND_ERR_HEADERS_TIMEOUT",
@@ -191,11 +181,16 @@ function readCauseCode(error: Error): string | undefined {
   return undefined;
 }
 
+function readErrorCode(error: Error): string | undefined {
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? code : undefined;
+}
+
 function isAbortLike(error: Error): boolean {
   if (error.name === "AbortError" || error.name === "TimeoutError") {
     return true;
   }
-  const code = (error as { code?: unknown }).code;
+  const code = readErrorCode(error);
   if (code === "ABORT_ERR" || code === "ETIMEDOUT") {
     return true;
   }
@@ -218,7 +213,7 @@ export function normalizeError(error: unknown): LinearCoreError {
   if (error instanceof Error) {
     if (isAbortLike(error)) {
       const details: Record<string, string> = { transient: "true" };
-      const causeCode = readCauseCode(error);
+      const causeCode = readCauseCode(error) ?? readErrorCode(error);
       setDetail(details, "cause", causeCode);
       return new LinearCoreError("Timeout", error.message || "Request timed out", details);
     }
@@ -228,9 +223,7 @@ export function normalizeError(error: unknown): LinearCoreError {
       const details: Record<string, string> = { cause: causeCode };
       const code: LinearCoreErrorCode = TIMEOUT_CAUSE_CODES.has(causeCode)
         ? "Timeout"
-        : NETWORK_CAUSE_CODES.has(causeCode)
-          ? "NetworkError"
-          : "NetworkError";
+        : "NetworkError";
       details.transient = transientFlag(code);
       return new LinearCoreError(code, `${error.message} (${causeCode})`, details);
     }

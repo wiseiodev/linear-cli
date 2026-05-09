@@ -21,7 +21,7 @@ export interface GlobalOptions {
   readonly view?: "table" | "detail" | "dense";
   readonly all?: boolean;
   readonly fields?: readonly string[];
-  readonly timeoutMs?: number;
+  readonly timeoutMs: number;
 }
 
 const DEFAULT_TIMEOUT_SECONDS = 30;

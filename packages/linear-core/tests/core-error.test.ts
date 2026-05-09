@@ -89,6 +89,15 @@ describe("normalizeError", () => {
     expect(normalizeError(error).code).toBe("Timeout");
   });
 
+  test("surfaces top-level abort error code as timeout cause", () => {
+    const error = Object.assign(new Error("connect timed out"), { code: "ETIMEDOUT" });
+
+    const result = normalizeError(error);
+
+    expect(result.code).toBe("Timeout");
+    expect(result.details.cause).toBe("ETIMEDOUT");
+  });
+
   test("maps native fetch TypeError with cause.code ENOTFOUND to NetworkError", () => {
     const cause = Object.assign(new Error("getaddrinfo ENOTFOUND api.linear.app"), {
       code: "ENOTFOUND",

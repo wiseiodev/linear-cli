@@ -495,7 +495,7 @@ export function createProgram(authManager = new AuthManager()): Command {
     const globals = getGlobalOptions(cmd);
     return authManager.openSession({
       profile: globals.profile,
-      ...(globals.timeoutMs !== undefined ? { timeoutMs: globals.timeoutMs } : {}),
+      timeoutMs: globals.timeoutMs,
     });
   };
 
