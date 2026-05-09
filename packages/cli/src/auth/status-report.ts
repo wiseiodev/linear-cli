@@ -65,11 +65,6 @@ async function fetchDefaultTeam(
   }
 
   try {
-    const team = await session.gateway.getTeam(teamKey);
-    return { id: team.id, key: team.key, name: team.name };
-  } catch {}
-
-  try {
     let cursor: string | undefined;
     do {
       const page = await session.gateway.listTeams({ limit: 250, cursor });

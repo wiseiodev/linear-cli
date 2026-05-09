@@ -27,10 +27,6 @@ const unauthenticatedStatus: AuthStatus = {
 interface SessionStub {
   readonly viewer?: { id: string; name: string; displayName?: string; email: string } | Error;
   readonly organization?: { id: string; name: string; urlKey: string } | Error;
-  readonly getTeam?:
-    | { id: string; key: string; name: string }
-    | Error
-    | ((key: string) => { id: string; key: string; name: string });
   readonly listTeams?:
     | ReadonlyArray<{ id: string; key: string; name: string }>
     | ReadonlyArray<{
@@ -49,12 +45,6 @@ function makeSession(stub: SessionStub): ActiveSession {
 
   let listTeamsCallCount = 0;
   const gateway = {
-    async getTeam(key: string) {
-      if (stub.getTeam instanceof Error) throw stub.getTeam;
-      if (typeof stub.getTeam === "function") return stub.getTeam(key);
-      if (stub.getTeam) return stub.getTeam;
-      throw new Error("not found");
-    },
     async listTeams() {
       const configured = stub.listTeams ?? [];
       const page = configured[listTeamsCallCount];
@@ -99,11 +89,11 @@ function makeManager(overrides: {
 }
 
 describe("buildAuthStatusReport", () => {
-  test("authenticated profile with team resolved by getTeam", async () => {
+  test("authenticated profile with team resolved by configured key", async () => {
     const session = makeSession({
       viewer: { id: "u1", name: "Dan", displayName: "Daniel", email: "dan@example.com" },
       organization: { id: "org-1", name: "Acme", urlKey: "acme" },
-      getTeam: { id: "t1", key: "ENG", name: "Engineering" },
+      listTeams: [{ id: "t1", key: "ENG", name: "Engineering" }],
     });
     const manager = makeManager({
       status: baseAuthenticatedStatus,
@@ -153,11 +143,10 @@ describe("buildAuthStatusReport", () => {
     expect(report.workspace).toEqual({ id: "org-1", name: "Acme", urlKey: "acme" });
   });
 
-  test("default team key falls back to listTeams when getTeam fails", async () => {
+  test("default team key resolves from the teams page", async () => {
     const session = makeSession({
       viewer: { id: "u1", name: "Dan", email: "dan@example.com" },
       organization: { id: "org-1", name: "Acme", urlKey: "acme" },
-      getTeam: new Error("entity not found"),
       listTeams: [
         { id: "t-other", key: "OPS", name: "Ops" },
         { id: "t1", key: "ENG", name: "Engineering" },
@@ -173,11 +162,10 @@ describe("buildAuthStatusReport", () => {
     expect(report.defaultTeam).toEqual({ id: "t1", key: "ENG", name: "Engineering" });
   });
 
-  test("default team key fallback checks subsequent team pages", async () => {
+  test("default team key lookup checks subsequent team pages", async () => {
     const session = makeSession({
       viewer: { id: "u1", name: "Dan", email: "dan@example.com" },
       organization: { id: "org-1", name: "Acme", urlKey: "acme" },
-      getTeam: new Error("entity not found"),
       listTeams: [
         {
           items: [{ id: "t-other", key: "OPS", name: "Ops" }],
