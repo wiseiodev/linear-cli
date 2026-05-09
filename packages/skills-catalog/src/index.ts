@@ -32,6 +32,12 @@ const CATALOG: readonly CatalogSkill[] = [
     description: "Build and validate cycle scope from Linear issues and constraints.",
     repoPath: "wiseiodev/linear-cli/assets/skills/cycle-planning",
   },
+  {
+    name: "linear-cli",
+    title: "Linear CLI",
+    description: "Use the Linear CLI safely for agent-friendly issue workflows.",
+    repoPath: "wiseiodev/linear-cli/assets/skills/linear-cli",
+  },
 ];
 
 class SpawnExecutor implements CommandExecutor {

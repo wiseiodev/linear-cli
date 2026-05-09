@@ -60,6 +60,7 @@ linear docs --open
 # Skills
 linear skills list
 linear skills install issue-triage
+linear skills install linear-cli
 
 # CRUD
 linear issues list --limit 10
@@ -82,6 +83,7 @@ Downloadable skills are included at:
 
 - `assets/skills/issue-triage/SKILL.md`
 - `assets/skills/cycle-planning/SKILL.md`
+- `assets/skills/linear-cli/SKILL.md`
 
 Installer wrapper command:
 
