@@ -2,6 +2,7 @@ import type { IssueRecord, PageResult } from "@wiseiodev/linear-core";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createProgram } from "../src/index.js";
 import {
+  buildIssueMatcher,
   collectPageResult,
   matchesCustomerNeed,
   matchesIssue,
@@ -178,6 +179,15 @@ describe("matchesIssue", () => {
     );
     expect(matchesIssue(baseIssue, { json: false, quiet: false, createdAfter: "2026-05-03" })).toBe(
       false,
+    );
+  });
+
+  test("buildIssueMatcher throws for invalid date boundaries instead of silently dropping all results", () => {
+    expect(() =>
+      buildIssueMatcher({ json: false, quiet: false, updatedAfter: "not-a-date" }),
+    ).toThrow(/--updated-after/);
+    expect(() => buildIssueMatcher({ json: false, quiet: false, createdAfter: "garbage" })).toThrow(
+      /--created-after/,
     );
   });
 

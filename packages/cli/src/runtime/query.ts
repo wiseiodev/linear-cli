@@ -148,19 +148,31 @@ export function parseDateBoundary(input: string, now: Date = new Date()): Date |
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
-function matchAfter(timestamp: string | undefined, boundary: string | undefined): boolean {
-  if (!boundary) {
+function isAfter(timestamp: string | undefined, cutoff: Date | undefined): boolean {
+  if (!cutoff) {
     return true;
   }
   if (!timestamp) {
     return false;
   }
   const value = new Date(timestamp);
-  const cutoff = parseDateBoundary(boundary);
-  if (!cutoff || Number.isNaN(value.getTime())) {
+  if (Number.isNaN(value.getTime())) {
     return false;
   }
   return value.getTime() >= cutoff.getTime();
+}
+
+function parseBoundaryOrThrow(input: string | undefined, flag: string): Date | undefined {
+  if (!input) {
+    return undefined;
+  }
+  const parsed = parseDateBoundary(input);
+  if (!parsed) {
+    throw new Error(
+      `Invalid value for ${flag}: "${input}". Use an ISO 8601 date (e.g. 2026-05-01) or a negative duration (e.g. -P7D).`,
+    );
+  }
+  return parsed;
 }
 
 export async function collectPageResult<T extends object>(
@@ -224,27 +236,39 @@ export async function collectPageResult<T extends object>(
   };
 }
 
+export function buildIssueMatcher(
+  globals: GlobalOptions,
+  viewerName?: string,
+): (issue: IssueRecord) => boolean {
+  const updatedAfter = parseBoundaryOrThrow(globals.updatedAfter, "--updated-after");
+  const createdAfter = parseBoundaryOrThrow(globals.createdAfter, "--created-after");
+  const assigneeQuery = globals.mine ? (viewerName ?? globals.assignee) : globals.assignee;
+
+  return (issue) => {
+    const labels = issue.labelNames?.join(" ");
+    return (
+      matchAnyText(globals.team, issue.teamKey, issue.teamName) &&
+      matchAnyText(globals.project, issue.projectId, issue.projectName) &&
+      matchAnyText(globals.cycle, issue.cycleId, issue.cycleName) &&
+      matchText(issue.stateName, globals.state) &&
+      matchText(issue.assigneeName, assigneeQuery) &&
+      matchText(labels, globals.label) &&
+      (globals.priority ? String(issue.priority) === String(globals.priority) : true) &&
+      matchAnyText(globals.query, issue.identifier, issue.title, issue.description) &&
+      isAfter(issue.updatedAt, updatedAfter) &&
+      isAfter(issue.createdAt, createdAfter) &&
+      (globals.noParent ? !issue.parentId : true) &&
+      runFilterExpression(issue, globals.filter)
+    );
+  };
+}
+
 export function matchesIssue(
   issue: IssueRecord,
   globals: GlobalOptions,
   viewerName?: string,
 ): boolean {
-  const labels = issue.labelNames?.join(" ");
-  const assigneeQuery = globals.mine ? (viewerName ?? globals.assignee) : globals.assignee;
-  return (
-    matchAnyText(globals.team, issue.teamKey, issue.teamName) &&
-    matchAnyText(globals.project, issue.projectId, issue.projectName) &&
-    matchAnyText(globals.cycle, issue.cycleId, issue.cycleName) &&
-    matchText(issue.stateName, globals.state) &&
-    matchText(issue.assigneeName, assigneeQuery) &&
-    matchText(labels, globals.label) &&
-    (globals.priority ? String(issue.priority) === String(globals.priority) : true) &&
-    matchAnyText(globals.query, issue.identifier, issue.title, issue.description) &&
-    matchAfter(issue.updatedAt, globals.updatedAfter) &&
-    matchAfter(issue.createdAt, globals.createdAfter) &&
-    (globals.noParent ? !issue.parentId : true) &&
-    runFilterExpression(issue, globals.filter)
-  );
+  return buildIssueMatcher(globals, viewerName)(issue);
 }
 
 export function matchesProject(project: ProjectRecord, globals: GlobalOptions): boolean {

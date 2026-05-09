@@ -56,10 +56,10 @@ import { renderEnvelope } from "./formatters/output.js";
 import { issueBranchHelpText, issuesHelpText, rootHelpText } from "./help/root-help.js";
 import { getGlobalOptions } from "./runtime/options.js";
 import {
+  buildIssueMatcher,
   collectPageResult,
   matchesCustomer,
   matchesCustomerNeed,
-  matchesIssue,
   matchesMilestone,
   matchesNotification,
   matchesProject,
@@ -532,11 +532,8 @@ export function createProgram(authManager = new AuthManager()): Command {
         const globals = getGlobalOptions(cmd);
         const viewerName = await resolveViewerName(cmd);
         const gateway = await sessionGateway(cmd);
-        return collectPageResult(
-          (options) => gateway.listIssues(options),
-          globals,
-          (issue) => matchesIssue(issue, globals, viewerName),
-        );
+        const matcher = buildIssueMatcher(globals, viewerName);
+        return collectPageResult((options) => gateway.listIssues(options), globals, matcher);
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getIssue(id),
       create: async (_manager, payload, cmd) => {
@@ -1256,13 +1253,12 @@ export function createProgram(authManager = new AuthManager()): Command {
       try {
         const viewerName = await resolveViewerName(cmd, { forceMine: true });
         const gateway = await sessionGateway(cmd);
+        const mineGlobals = { ...globals, mine: true };
+        const matcher = buildIssueMatcher(mineGlobals, viewerName);
         const data = await collectPageResult(
           (options) => gateway.listIssues(options),
-          {
-            ...globals,
-            mine: true,
-          },
-          (issue) => matchesIssue(issue, { ...globals, mine: true }, viewerName),
+          mineGlobals,
+          matcher,
         );
         renderEnvelope(successEnvelope("issues", "list", data), globals);
       } catch (error) {
@@ -1287,12 +1283,12 @@ export function createProgram(authManager = new AuthManager()): Command {
 
       try {
         const gateway = await sessionGateway(cmd);
+        const matcher = buildIssueMatcher(globals);
         const data = await collectPageResult(
           (options) => gateway.listIssues(options),
           globals,
           (issue) =>
-            matchesIssue(issue, globals) &&
-            (!issue.assigneeName || /triage/i.test(issue.stateName ?? "")),
+            matcher(issue) && (!issue.assigneeName || /triage/i.test(issue.stateName ?? "")),
         );
         renderEnvelope(successEnvelope("issues", "list", data), globals);
       } catch (error) {
