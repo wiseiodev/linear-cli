@@ -112,4 +112,49 @@ describe("AuthManager", () => {
     expect(credentialStore.state.get("default")?.accessToken).toBe("fresh-access");
     vi.unstubAllGlobals();
   });
+
+  test("getProfile returns the stored profile when present", async () => {
+    const configStore = new ConfigStore("/tmp/linear-auth-config-unused.json");
+    vi.spyOn(configStore, "load").mockResolvedValue({
+      version: 2,
+      defaultProfile: "default",
+      profiles: {
+        default: {
+          name: "default",
+          preferredAuth: "api-key",
+          team: "ENG",
+        },
+      },
+    });
+
+    const credentialStore = createMemoryStore({});
+    const manager = new AuthManager(configStore, Promise.resolve(credentialStore));
+
+    const profile = await manager.getProfile();
+    expect(profile).toEqual({
+      name: "default",
+      preferredAuth: "api-key",
+      team: "ENG",
+    });
+  });
+
+  test("getProfile returns undefined when profile is not configured", async () => {
+    const configStore = new ConfigStore("/tmp/linear-auth-config-unused.json");
+    vi.spyOn(configStore, "load").mockResolvedValue({
+      version: 2,
+      defaultProfile: "default",
+      profiles: {
+        default: {
+          name: "default",
+          preferredAuth: "oauth",
+        },
+      },
+    });
+
+    const credentialStore = createMemoryStore({});
+    const manager = new AuthManager(configStore, Promise.resolve(credentialStore));
+
+    const profile = await manager.getProfile("missing");
+    expect(profile).toBeUndefined();
+  });
 });

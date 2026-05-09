@@ -1,6 +1,6 @@
 import { LinearClient } from "@linear/sdk";
 import { ConfigStore } from "../config/config-store.js";
-import type { OAuthProfileConfig } from "../config/schema.js";
+import type { OAuthProfileConfig, ProfileConfig } from "../config/schema.js";
 import { LinearGateway } from "../entities/linear-gateway.js";
 import { LinearCoreError } from "../errors/core-error.js";
 import { createCredentialStore } from "../token-store/composite-store.js";
@@ -115,6 +115,17 @@ export class AuthManager {
     try {
       const selectedProfile = await this.configStore.getProfile(profile);
       return selectedProfile.oauth;
+    } catch (error) {
+      if (error instanceof LinearCoreError && error.code === "CONFIG_NOT_FOUND") {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
+  public async getProfile(profile?: string): Promise<ProfileConfig | undefined> {
+    try {
+      return await this.configStore.getProfile(profile);
     } catch (error) {
       if (error instanceof LinearCoreError && error.code === "CONFIG_NOT_FOUND") {
         return undefined;

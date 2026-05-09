@@ -48,6 +48,7 @@ import { runLinearTui } from "@wiseiodev/tui";
 import { Command } from "commander";
 import open from "open";
 import { runInteractiveOAuthLogin } from "./auth/login.js";
+import { buildAuthStatusReport } from "./auth/status-report.js";
 import { isIssueUpdateInput } from "./commands/issue-guards.js";
 import { registerIssuesBulkUpdate } from "./commands/issues-bulk-update.js";
 import { registerResourceCommand } from "./commands/resource.js";
@@ -386,8 +387,8 @@ export function createProgram(authManager = new AuthManager()): Command {
     .action(async (_, cmd) => {
       const globals = getGlobalOptions(cmd);
       try {
-        const status = await authManager.status(globals.profile);
-        renderEnvelope(successEnvelope("auth", "status", status), globals);
+        const report = await buildAuthStatusReport(authManager, globals.profile);
+        renderEnvelope(successEnvelope("auth", "status", report), globals);
       } catch (error) {
         const normalized = normalizeError(error);
         renderEnvelope(
