@@ -32,6 +32,7 @@ Examples:
   linear documents list
   linear templates list
   linear skills install issue-triage
+  linear skills install linear-cli
   linear docs --open
 
 Output:
