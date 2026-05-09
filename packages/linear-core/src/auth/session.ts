@@ -44,12 +44,20 @@ export interface AuthorizationCodeLoginInput {
   readonly code: string;
   readonly redirectUri: string;
   readonly codeVerifier: string;
+  readonly signal?: AbortSignal;
 }
 
 export interface RefreshTokenInput {
   readonly profile: string;
   readonly clientId: string;
   readonly tokenUrl: string;
+  readonly signal?: AbortSignal;
+}
+
+export interface OpenSessionOptions {
+  readonly profile?: string;
+  readonly timeoutMs?: number;
+  readonly signal?: AbortSignal;
 }
 
 export interface ActiveSession {
@@ -57,6 +65,26 @@ export interface ActiveSession {
   readonly client: LinearClient;
   readonly gateway: LinearGateway;
   readonly credentials: StoredCredentials;
+}
+
+function resolveRequestSignal(options?: OpenSessionOptions): AbortSignal | undefined {
+  if (!options) {
+    return undefined;
+  }
+  const signals: AbortSignal[] = [];
+  if (options.signal) {
+    signals.push(options.signal);
+  }
+  if (typeof options.timeoutMs === "number" && options.timeoutMs > 0) {
+    signals.push(AbortSignal.timeout(options.timeoutMs));
+  }
+  if (signals.length === 0) {
+    return undefined;
+  }
+  if (signals.length === 1) {
+    return signals[0];
+  }
+  return AbortSignal.any(signals);
 }
 
 function toStoredCredentials(token: OAuthToken): StoredCredentials {
@@ -138,6 +166,7 @@ export class AuthManager {
       code: input.code,
       redirectUri: input.redirectUri,
       codeVerifier: input.codeVerifier,
+      signal: input.signal,
     });
 
     await this.loginWithToken({
@@ -163,6 +192,7 @@ export class AuthManager {
       clientId: input.clientId,
       tokenUrl: input.tokenUrl,
       refreshToken: existing.refreshToken,
+      signal: input.signal,
     });
 
     await store.set(input.profile, {
@@ -210,13 +240,14 @@ export class AuthManager {
     };
   }
 
-  public async openSession(options?: { readonly profile?: string }): Promise<ActiveSession> {
+  public async openSession(options?: OpenSessionOptions): Promise<ActiveSession> {
     const config = await this.configStore.load();
     const selectedProfile = options?.profile ?? config.defaultProfile;
     const selected = config.profiles[selectedProfile];
     const store = await this.credentialsStore();
     const credentials = await store.get(selectedProfile);
     const oauthConfig = selected?.oauth;
+    const requestSignal = resolveRequestSignal(options);
 
     if (credentials?.accessToken) {
       let token: OAuthToken = {
@@ -230,6 +261,7 @@ export class AuthManager {
           clientId: oauthConfig.clientId,
           tokenUrl: oauthConfig.tokenUrl,
           refreshToken: token.refreshToken,
+          signal: requestSignal,
         });
         token = refreshed;
         await store.set(selectedProfile, {
@@ -240,6 +272,7 @@ export class AuthManager {
 
       const client = new LinearClient({
         accessToken: token.accessToken,
+        ...(requestSignal ? { signal: requestSignal } : {}),
       });
 
       return {
@@ -255,7 +288,10 @@ export class AuthManager {
     }
 
     if (credentials?.apiKey) {
-      const client = new LinearClient({ apiKey: credentials.apiKey });
+      const client = new LinearClient({
+        apiKey: credentials.apiKey,
+        ...(requestSignal ? { signal: requestSignal } : {}),
+      });
       return {
         profile: selectedProfile,
         client,
@@ -268,7 +304,10 @@ export class AuthManager {
 
     const envApiKey = process.env.LINEAR_API_KEY;
     if (envApiKey) {
-      const client = new LinearClient({ apiKey: envApiKey });
+      const client = new LinearClient({
+        apiKey: envApiKey,
+        ...(requestSignal ? { signal: requestSignal } : {}),
+      });
       return {
         profile: selectedProfile,
         client,

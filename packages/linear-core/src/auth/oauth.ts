@@ -29,12 +29,14 @@ interface TokenExchangeInput {
   readonly code: string;
   readonly redirectUri: string;
   readonly codeVerifier: string;
+  readonly signal?: AbortSignal;
 }
 
 interface TokenRefreshInput {
   readonly clientId: string;
   readonly tokenUrl: string;
   readonly refreshToken: string;
+  readonly signal?: AbortSignal;
 }
 
 const tokenResponseSchema = z.object({
@@ -172,6 +174,7 @@ export async function exchangeAuthorizationCode(
       "content-type": "application/x-www-form-urlencoded",
     },
     body,
+    signal: input.signal,
   });
 
   return parseTokenResponse(response);
@@ -193,6 +196,7 @@ export async function refreshOAuthToken(
       "content-type": "application/x-www-form-urlencoded",
     },
     body,
+    signal: input.signal,
   });
 
   const token = await parseTokenResponse(response);
