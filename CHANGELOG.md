@@ -1,3 +1,14 @@
+# [1.5.0](https://github.com/wiseiodev/linear-cli/compare/v1.4.0...v1.5.0) (2026-05-09)
+
+
+### Features
+
+* **cli:** add --parent filter to issues list ([#18](https://github.com/wiseiodev/linear-cli/issues/18)) ([e1e8f21](https://github.com/wiseiodev/linear-cli/commit/e1e8f217eff5c84b7e1cd723a94b865c65060763)), closes [#3](https://github.com/wiseiodev/linear-cli/issues/3)
+* **cli:** add linear cli v2 foundations ([#2](https://github.com/wiseiodev/linear-cli/issues/2)) ([854d165](https://github.com/wiseiodev/linear-cli/commit/854d165701dc3917ef33b3c3f8e1ff55f94c197e))
+* **cli:** improve help discoverability for subcommands ([#1](https://github.com/wiseiodev/linear-cli/issues/1)) ([702ebce](https://github.com/wiseiodev/linear-cli/commit/702ebce13a42e1061e7c588b5f201563a06644ca))
+* **cli:** richer filters for issues list ([#17](https://github.com/wiseiodev/linear-cli/issues/17)) ([34d98bd](https://github.com/wiseiodev/linear-cli/commit/34d98bd4455eed312349a4610c8c52217325842b)), closes [#4](https://github.com/wiseiodev/linear-cli/issues/4)
+* **cli:** show per-resource filters, examples, input field hints in subcommand help ([#19](https://github.com/wiseiodev/linear-cli/issues/19)) ([5818d1e](https://github.com/wiseiodev/linear-cli/commit/5818d1e5a83948535e1f4b546245111148e67dfc)), closes [#7](https://github.com/wiseiodev/linear-cli/issues/7)
+
 # [1.5.0-alpha.3](https://github.com/wiseiodev/linear-cli/compare/v1.5.0-alpha.2...v1.5.0-alpha.3) (2026-05-09)
 
 
