@@ -84,6 +84,7 @@ export async function buildAuthStatusReport(
   profile?: string,
 ): Promise<AuthStatusReport> {
   const status = await authManager.status(profile);
+  const resolvedProfile = status.profile;
 
   if (!status.hasAccessToken && !status.hasApiKey) {
     return { ...status, user: null, workspace: null, defaultTeam: null };
@@ -91,12 +92,12 @@ export async function buildAuthStatusReport(
 
   let session: ActiveSession;
   try {
-    session = await authManager.openSession({ profile });
+    session = await authManager.openSession({ profile: resolvedProfile });
   } catch {
     return { ...status, user: null, workspace: null, defaultTeam: null };
   }
 
-  const profileConfig = await authManager.getProfile(profile);
+  const profileConfig = await authManager.getProfile(resolvedProfile);
   const [user, workspace, defaultTeam] = await Promise.all([
     fetchUser(session),
     fetchWorkspace(session),

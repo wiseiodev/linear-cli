@@ -1,5 +1,5 @@
 import type { ActiveSession, AuthStatus } from "@wiseiodev/linear-core";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { type AuthStatusReportManager, buildAuthStatusReport } from "../src/auth/status-report.js";
 
 const baseAuthenticatedStatus: AuthStatus = {
@@ -107,6 +107,27 @@ describe("buildAuthStatusReport", () => {
     expect(report.workspace).toEqual({ id: "org-1", name: "Acme", urlKey: "acme" });
     expect(report.defaultTeam).toEqual({ id: "t1", key: "ENG", name: "Engineering" });
     expect(report.profile).toBe("default");
+  });
+
+  test("uses the status-resolved profile for live session and config lookup", async () => {
+    const session = makeSession({
+      viewer: { id: "u1", name: "Dan", email: "dan@example.com" },
+      organization: { id: "org-1", name: "Acme", urlKey: "acme" },
+    });
+    const manager: AuthStatusReportManager = {
+      status: vi.fn().mockResolvedValue({
+        ...baseAuthenticatedStatus,
+        profile: "work",
+      }),
+      openSession: vi.fn().mockResolvedValue(session),
+      getProfile: vi.fn().mockResolvedValue({}),
+    };
+
+    const report = await buildAuthStatusReport(manager);
+
+    expect(report.profile).toBe("work");
+    expect(manager.openSession).toHaveBeenCalledWith({ profile: "work" });
+    expect(manager.getProfile).toHaveBeenCalledWith("work");
   });
 
   test("authenticated profile with no team configured returns null defaultTeam", async () => {
