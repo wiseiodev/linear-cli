@@ -1,3 +1,9 @@
+export interface IssueLabelSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly color?: string;
+}
+
 export interface IssueRecord {
   readonly id: string;
   readonly number: number;
@@ -8,9 +14,13 @@ export interface IssueRecord {
   readonly priority: number;
   readonly estimate?: number;
   readonly dueDate?: string;
+  readonly stateId?: string;
   readonly stateName?: string;
+  readonly stateType?: string;
   readonly assigneeId?: string;
   readonly assigneeName?: string;
+  readonly creatorId?: string;
+  readonly creatorName?: string;
   readonly teamId?: string;
   readonly teamKey?: string;
   readonly teamName?: string;
@@ -22,12 +32,19 @@ export interface IssueRecord {
   readonly milestoneName?: string;
   readonly parentId?: string;
   readonly parentIdentifier?: string;
+  readonly parentTitle?: string;
   readonly labelNames?: readonly string[];
+  readonly labels?: readonly IssueLabelSummary[];
   readonly childCount?: number;
+  readonly childrenCount?: number;
+  readonly hasChildren?: boolean;
   readonly relationCount?: number;
   readonly url: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly completedAt?: string;
+  readonly canceledAt?: string;
+  readonly archivedAt?: string;
 }
 
 export interface ProjectRecord {

@@ -109,25 +109,37 @@ function readDisplayName(
 }
 
 async function toIssue(record: SdkIssueLike): Promise<IssueRecord> {
-  const [state, assignee, project, cycle, team, milestone, parent, labels, children, relations] =
-    await Promise.all([
-      resolveFetch(record.state),
-      resolveFetch(record.assignee),
-      resolveFetch(record.project),
-      resolveFetch(record.cycle),
-      resolveFetch(record.team),
-      resolveFetch(record.projectMilestone),
-      resolveFetch(record.parent),
-      resolveConnectionNodes(
-        typeof record.labels === "function" ? () => record.labels() : undefined,
-      ),
-      resolveConnectionNodes(
-        typeof record.children === "function" ? () => record.children() : undefined,
-      ),
-      resolveConnectionNodes(
-        typeof record.relations === "function" ? () => record.relations() : undefined,
-      ),
-    ]);
+  const [
+    state,
+    assignee,
+    creator,
+    project,
+    cycle,
+    team,
+    milestone,
+    parent,
+    labels,
+    children,
+    relations,
+  ] = await Promise.all([
+    resolveFetch(record.state),
+    resolveFetch(record.assignee),
+    resolveFetch(record.creator),
+    resolveFetch(record.project),
+    resolveFetch(record.cycle),
+    resolveFetch(record.team),
+    resolveFetch(record.projectMilestone),
+    resolveFetch(record.parent),
+    resolveConnectionNodes(typeof record.labels === "function" ? () => record.labels() : undefined),
+    resolveConnectionNodes(
+      typeof record.children === "function" ? () => record.children() : undefined,
+    ),
+    resolveConnectionNodes(
+      typeof record.relations === "function" ? () => record.relations() : undefined,
+    ),
+  ]);
+
+  const childrenCount = children.length;
 
   return {
     id: record.id,
@@ -139,9 +151,13 @@ async function toIssue(record: SdkIssueLike): Promise<IssueRecord> {
     priority: record.priority,
     estimate: record.estimate ?? undefined,
     dueDate: record.dueDate ?? undefined,
+    stateId: state?.id,
     stateName: state?.name,
+    stateType: state?.type,
     assigneeId: record.assigneeId ?? undefined,
     assigneeName: readDisplayName(assignee),
+    creatorId: record.creatorId ?? undefined,
+    creatorName: readDisplayName(creator),
     teamId: record.teamId,
     teamKey: team?.key,
     teamName: team?.displayName ?? team?.name,
@@ -153,14 +169,30 @@ async function toIssue(record: SdkIssueLike): Promise<IssueRecord> {
     milestoneName: milestone?.name,
     parentId: record.parentId ?? undefined,
     parentIdentifier: parent?.identifier,
+    parentTitle: parent?.title,
     labelNames: labels
       .map((label) => label.name)
       .filter((value): value is string => typeof value === "string"),
-    childCount: children.length,
+    labels: labels
+      .filter(
+        (label): label is typeof label & { id: string; name: string } =>
+          typeof label.id === "string" && typeof label.name === "string",
+      )
+      .map((label) => ({
+        id: label.id,
+        name: label.name,
+        ...(label.color ? { color: label.color } : {}),
+      })),
+    childCount: childrenCount,
+    childrenCount,
+    hasChildren: childrenCount > 0,
     relationCount: relations.length,
     url: record.url,
     createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
+    completedAt: record.completedAt ? toDateString(record.completedAt) : undefined,
+    canceledAt: record.canceledAt ? toDateString(record.canceledAt) : undefined,
+    archivedAt: record.archivedAt ? toDateString(record.archivedAt) : undefined,
   };
 }
 
