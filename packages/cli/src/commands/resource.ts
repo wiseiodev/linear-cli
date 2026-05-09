@@ -7,6 +7,7 @@ import type {
 import { errorEnvelope, normalizeError, successEnvelope } from "@wiseiodev/linear-core";
 import type { Command } from "commander";
 import { renderEnvelope } from "../formatters/output.js";
+import { getResourceHelpTexts } from "../help/resource-help.js";
 import { getGlobalOptions } from "../runtime/options.js";
 import { parseJsonInput } from "./input.js";
 
@@ -61,17 +62,25 @@ export function registerResourceCommand(
   description: string,
   handlers: ResourceHandlers,
   authManager: AuthManager,
-): void {
+): Command {
   const command = program.command(entity).description(description);
+  const helpTexts = getResourceHelpTexts(entity);
+
+  if (helpTexts.resource) {
+    command.addHelpText("after", helpTexts.resource);
+  }
 
   if (handlers.list) {
     const listHandler = handlers.list;
-    command
+    const listCommand = command
       .command("list")
       .description(`List ${entity}`)
       .action(async (_, cmd) =>
         executeAction(entity, "list", cmd, () => listHandler(authManager, cmd)),
       );
+    if (helpTexts.list) {
+      listCommand.addHelpText("after", helpTexts.list);
+    }
   }
 
   if (handlers.get) {
@@ -87,10 +96,10 @@ export function registerResourceCommand(
 
   if (handlers.create) {
     const createHandler = handlers.create;
-    command
+    const createCommand = command
       .command("create")
       .description(`Create ${entity}`)
-      .option("--input <json>", "Inline JSON payload")
+      .option("--input <json>", "Inline JSON payload (see help for accepted fields)")
       .option("--input-file <path>", "JSON payload file")
       .action(async (opts, cmd) =>
         executeAction(entity, "create", cmd, async () => {
@@ -98,15 +107,18 @@ export function registerResourceCommand(
           return createHandler(authManager, payload, cmd);
         }),
       );
+    if (helpTexts.create) {
+      createCommand.addHelpText("after", helpTexts.create);
+    }
   }
 
   if (handlers.update) {
     const updateHandler = handlers.update;
-    command
+    const updateCommand = command
       .command("update")
       .description(`Update ${entity}`)
       .argument("<id>", "Entity id")
-      .option("--input <json>", "Inline JSON payload")
+      .option("--input <json>", "Inline JSON payload (see help for accepted fields)")
       .option("--input-file <path>", "JSON payload file")
       .action(async (id, opts, cmd) =>
         executeAction(entity, "update", cmd, async () => {
@@ -114,6 +126,9 @@ export function registerResourceCommand(
           return updateHandler(authManager, id, payload, cmd);
         }),
       );
+    if (helpTexts.update) {
+      updateCommand.addHelpText("after", helpTexts.update);
+    }
   }
 
   if (handlers.delete) {
@@ -126,4 +141,6 @@ export function registerResourceCommand(
         executeAction(entity, "delete", cmd, () => deleteHandler(authManager, id, cmd)),
       );
   }
+
+  return command;
 }
