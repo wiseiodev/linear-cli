@@ -50,6 +50,7 @@ Examples:
   linear issues --help
   linear issues list --limit 10 --json
   linear issues list --mine --state "Todo" --view detail
+  linear issues list --parent ANN-123 --json
   linear issues list --fields identifier,title,assigneeName,projectName
   linear issues list --project "Evalite setup" --label eng --priority 2 --json
   linear issues list --query "evalite" --json

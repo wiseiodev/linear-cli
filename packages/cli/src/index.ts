@@ -308,6 +308,10 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--mine", "Limit issue-oriented commands to items assigned to the authenticated user")
     .option("--project <id-or-name>", "Project filter")
     .option("--cycle <id-or-name>", "Cycle filter")
+    .option(
+      "--parent <id-or-identifier>",
+      "Parent issue filter (UUID or identifier like ANN-123). Lists only that issue's direct children.",
+    )
     .option("--state <name>", "State or type filter")
     .option("--assignee <name>", "Assignee filter")
     .option("--label <name>", "Label filter")
@@ -532,8 +536,13 @@ export function createProgram(authManager = new AuthManager()): Command {
         const globals = getGlobalOptions(cmd);
         const viewerName = await resolveViewerName(cmd);
         const gateway = await sessionGateway(cmd);
+        const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
         const matcher = buildIssueMatcher(globals, viewerName);
-        return collectPageResult((options) => gateway.listIssues(options), globals, matcher);
+        return collectPageResult(
+          (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
+          globals,
+          matcher,
+        );
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getIssue(id),
       create: async (_manager, payload, cmd) => {
@@ -1253,10 +1262,11 @@ export function createProgram(authManager = new AuthManager()): Command {
       try {
         const viewerName = await resolveViewerName(cmd, { forceMine: true });
         const gateway = await sessionGateway(cmd);
+        const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
         const mineGlobals = { ...globals, mine: true };
         const matcher = buildIssueMatcher(mineGlobals, viewerName);
         const data = await collectPageResult(
-          (options) => gateway.listIssues(options),
+          (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           mineGlobals,
           matcher,
         );
@@ -1283,9 +1293,10 @@ export function createProgram(authManager = new AuthManager()): Command {
 
       try {
         const gateway = await sessionGateway(cmd);
+        const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
         const matcher = buildIssueMatcher(globals);
         const data = await collectPageResult(
-          (options) => gateway.listIssues(options),
+          (options) => gateway.listIssues(parentId ? { ...options, parent: parentId } : options),
           globals,
           (issue) =>
             matcher(issue) && (!issue.assigneeName || /triage/i.test(issue.stateName ?? "")),
