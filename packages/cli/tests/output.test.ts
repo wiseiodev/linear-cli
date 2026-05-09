@@ -119,7 +119,7 @@ describe("renderEnvelope", () => {
     expect(logSpy).toHaveBeenCalledWith("issues.get");
   });
 
-  test("projects --json output through --fields and preserves nextCursor", () => {
+  test("applies --fields to issues JSON output and preserves nextCursor", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     renderEnvelope(
@@ -150,6 +150,43 @@ describe("renderEnvelope", () => {
     expect(parsed.ok).toBe(true);
     expect(parsed.data.items).toEqual([{ identifier: "ENG-1", stateType: "unstarted" }]);
     expect(parsed.data.nextCursor).toBe("cursor-2");
+  });
+
+  test("redacts sensitive fields from JSON output", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    renderEnvelope(
+      successEnvelope("auth", "login", {
+        profile: "default",
+        method: "oauth",
+        apiKey: "lin_api_secret",
+        accessToken: "access_secret",
+        refreshToken: "refresh_secret",
+        authorizationUrl: "https://linear.app/oauth/authorize?state=secret_state",
+        redirectUri: "http://127.0.0.1:8787/oauth/callback",
+        oauth: {
+          clientId: "client_secretish",
+          tokenUrl: "https://api.linear.app/oauth/token",
+          scopes: ["read", "write"],
+          nested: {
+            password: "pw_secret",
+          },
+        },
+      }),
+      {
+        json: true,
+        quiet: false,
+      },
+    );
+
+    const output = String(logSpy.mock.calls[0]?.[0]);
+    expect(output).not.toContain("lin_api_secret");
+    expect(output).not.toContain("access_secret");
+    expect(output).not.toContain("refresh_secret");
+    expect(output).not.toContain("secret_state");
+    expect(output).not.toContain("client_secretish");
+    expect(output).not.toContain("pw_secret");
+    expect(output).toContain("[REDACTED]");
   });
 
   test("supports detail views with field selection for issue lists", () => {
