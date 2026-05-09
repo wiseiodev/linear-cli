@@ -313,6 +313,16 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--label <name>", "Label filter")
     .option("--priority <value>", "Priority filter")
     .option("--status <name>", "Status or health filter")
+    .option("--query <text>", "Free-text search across identifier, title, and description")
+    .option(
+      "--updated-after <date>",
+      "Only items updated on/after the date (ISO 8601 date or relative duration like -P7D)",
+    )
+    .option(
+      "--created-after <date>",
+      "Only items created on/after the date (ISO 8601 date or relative duration like -P7D)",
+    )
+    .option("--no-parent", "Only list top-level issues with no parent")
     .option("--filter <expr>", "Lightweight filter expression, e.g. estimate>2")
     .option("--sort <field>", "Sort by a field, prefix with - for descending")
     .option("--view <preset>", "Human output preset: table | detail | dense")

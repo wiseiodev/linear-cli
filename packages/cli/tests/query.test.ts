@@ -1,7 +1,12 @@
 import type { IssueRecord, PageResult } from "@wiseiodev/linear-core";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createProgram } from "../src/index.js";
-import { collectPageResult, matchesCustomerNeed } from "../src/runtime/query.js";
+import {
+  collectPageResult,
+  matchesCustomerNeed,
+  matchesIssue,
+  parseDateBoundary,
+} from "../src/runtime/query.js";
 
 describe("collectPageResult", () => {
   test("fetches fixed-size batches until filtered results satisfy the requested limit", async () => {
@@ -114,6 +119,76 @@ describe("matchesCustomerNeed", () => {
         },
       ),
     ).toBe(true);
+  });
+});
+
+describe("parseDateBoundary", () => {
+  test("parses ISO date strings", () => {
+    expect(parseDateBoundary("2026-05-01")?.toISOString()).toBe("2026-05-01T00:00:00.000Z");
+  });
+
+  test("parses negative ISO 8601 durations as offsets from now", () => {
+    const now = new Date("2026-05-08T00:00:00.000Z");
+    expect(parseDateBoundary("-P7D", now)?.toISOString()).toBe("2026-05-01T00:00:00.000Z");
+    expect(parseDateBoundary("-PT2H", now)?.toISOString()).toBe("2026-05-07T22:00:00.000Z");
+  });
+
+  test("returns undefined for unparseable input", () => {
+    expect(parseDateBoundary("nonsense")).toBeUndefined();
+    expect(parseDateBoundary("-P")).toBeUndefined();
+  });
+});
+
+describe("matchesIssue", () => {
+  const baseIssue: IssueRecord = {
+    id: "issue-1",
+    number: 1,
+    identifier: "ENG-1",
+    title: "Set up Evalite",
+    description: "Configure evalite for the CLI",
+    priority: 2,
+    stateName: "Todo",
+    assigneeName: "Wise Dev",
+    teamKey: "ENG",
+    teamName: "Engineering",
+    parentId: undefined,
+    url: "https://linear.app/x/issue/ENG-1",
+    createdAt: "2026-05-02T00:00:00.000Z",
+    updatedAt: "2026-05-05T00:00:00.000Z",
+  };
+
+  test("query matches across identifier, title, and description", () => {
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, query: "evalite" })).toBe(true);
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, query: "ENG-1" })).toBe(true);
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, query: "missing" })).toBe(false);
+  });
+
+  test("updated-after filters out older issues", () => {
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, updatedAfter: "2026-05-01" })).toBe(
+      true,
+    );
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, updatedAfter: "2026-05-06" })).toBe(
+      false,
+    );
+  });
+
+  test("created-after filters out older issues", () => {
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, createdAfter: "2026-05-01" })).toBe(
+      true,
+    );
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, createdAfter: "2026-05-03" })).toBe(
+      false,
+    );
+  });
+
+  test("no-parent only keeps issues without a parent", () => {
+    expect(matchesIssue(baseIssue, { json: false, quiet: false, noParent: true })).toBe(true);
+    expect(
+      matchesIssue(
+        { ...baseIssue, parentId: "parent-1" },
+        { json: false, quiet: false, noParent: true },
+      ),
+    ).toBe(false);
   });
 });
 

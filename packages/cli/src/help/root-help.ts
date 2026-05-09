@@ -51,6 +51,11 @@ Examples:
   linear issues list --limit 10 --json
   linear issues list --mine --state "Todo" --view detail
   linear issues list --fields identifier,title,assigneeName,projectName
+  linear issues list --project "Evalite setup" --label eng --priority 2 --json
+  linear issues list --query "evalite" --json
+  linear issues list --updated-after 2026-05-01 --json
+  linear issues list --created-after -P7D --json
+  linear issues list --no-parent --json
   linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}' --json
   linear issues bulk-update --ids ANN-1,ANN-2 --input '{"priority":2}' --dry-run --json
   linear issues bulk-update --input-file updates.json --json

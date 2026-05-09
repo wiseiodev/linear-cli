@@ -97,8 +97,70 @@ function hasLocalFiltering(options: GlobalOptions): boolean {
       options.label ||
       options.priority ||
       options.status ||
+      options.query ||
+      options.updatedAfter ||
+      options.createdAfter ||
+      options.noParent ||
       options.filter,
   );
+}
+
+const ISO_DURATION_PATTERN =
+  /^P(?:(\d+(?:\.\d+)?)Y)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function isoDurationToMs(duration: string): number | undefined {
+  const match = ISO_DURATION_PATTERN.exec(duration);
+  if (!match || match[0] === "P" || match[0] === "PT") {
+    return undefined;
+  }
+
+  const [, y, mo, w, d, h, mi, s] = match;
+  const n = (value?: string) => (value ? Number(value) : 0);
+  return (
+    n(y) * 365 * MS_PER_DAY +
+    n(mo) * 30 * MS_PER_DAY +
+    n(w) * 7 * MS_PER_DAY +
+    n(d) * MS_PER_DAY +
+    n(h) * 60 * 60 * 1000 +
+    n(mi) * 60 * 1000 +
+    n(s) * 1000
+  );
+}
+
+export function parseDateBoundary(input: string, now: Date = new Date()): Date | undefined {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (trimmed.startsWith("-P") || trimmed.startsWith("+P")) {
+    const ms = isoDurationToMs(trimmed.slice(1));
+    if (ms === undefined) {
+      return undefined;
+    }
+    const sign = trimmed.startsWith("-") ? -1 : 1;
+    return new Date(now.getTime() + sign * ms);
+  }
+
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function matchAfter(timestamp: string | undefined, boundary: string | undefined): boolean {
+  if (!boundary) {
+    return true;
+  }
+  if (!timestamp) {
+    return false;
+  }
+  const value = new Date(timestamp);
+  const cutoff = parseDateBoundary(boundary);
+  if (!cutoff || Number.isNaN(value.getTime())) {
+    return false;
+  }
+  return value.getTime() >= cutoff.getTime();
 }
 
 export async function collectPageResult<T extends object>(
@@ -177,6 +239,10 @@ export function matchesIssue(
     matchText(issue.assigneeName, assigneeQuery) &&
     matchText(labels, globals.label) &&
     (globals.priority ? String(issue.priority) === String(globals.priority) : true) &&
+    matchAnyText(globals.query, issue.identifier, issue.title, issue.description) &&
+    matchAfter(issue.updatedAt, globals.updatedAfter) &&
+    matchAfter(issue.createdAt, globals.createdAfter) &&
+    (globals.noParent ? !issue.parentId : true) &&
     runFilterExpression(issue, globals.filter)
   );
 }
