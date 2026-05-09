@@ -16,6 +16,10 @@ export interface GlobalOptions {
   readonly label?: string;
   readonly priority?: string;
   readonly status?: string;
+  readonly query?: string;
+  readonly updatedAfter?: string;
+  readonly createdAfter?: string;
+  readonly noParent?: boolean;
   readonly filter?: string;
   readonly sort?: string;
   readonly view?: "table" | "detail" | "dense";
@@ -55,6 +59,10 @@ export function getGlobalOptions(command: Command): GlobalOptions {
     ...(readString(raw.label) ? { label: readString(raw.label) } : {}),
     ...(readString(raw.priority) ? { priority: readString(raw.priority) } : {}),
     ...(readString(raw.status) ? { status: readString(raw.status) } : {}),
+    ...(readString(raw.query) ? { query: readString(raw.query) } : {}),
+    ...(readString(raw.updatedAfter) ? { updatedAfter: readString(raw.updatedAfter) } : {}),
+    ...(readString(raw.createdAfter) ? { createdAfter: readString(raw.createdAfter) } : {}),
+    ...(raw.parent === false ? { noParent: true } : {}),
     ...(readString(raw.filter) ? { filter: readString(raw.filter) } : {}),
     ...(readString(raw.sort) ? { sort: readString(raw.sort) } : {}),
     ...(readString(raw.view) ? { view: readString(raw.view) as "table" | "detail" | "dense" } : {}),
