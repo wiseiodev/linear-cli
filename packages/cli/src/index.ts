@@ -319,7 +319,7 @@ export function createProgram(authManager = new AuthManager()): Command {
     .option("--sort <field>", "Sort by a field, prefix with - for descending")
     .option("--view <preset>", "Human output preset: table | detail | dense")
     .option("--all", "Drain all pages before filtering")
-    .option("--fields <list>", "Comma-separated field selection for human output")
+    .option("--fields <list>", "Comma-separated field selection (applies to JSON and human output)")
     .option("--timeout <seconds>", "Per-request network timeout in seconds (default 30)", (value) =>
       Number.parseInt(value, 10),
     );

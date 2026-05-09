@@ -360,6 +360,7 @@ describe("LinearGateway v2", () => {
     expect(issue.parentIdentifier).toBe("ENG-0");
     expect(issue.parentTitle).toBe("Parent issue");
     expect(issue.labelNames).toEqual(["Bug"]);
+    expect(issue.labels).toEqual([{ id: "label_1", name: "Bug", color: "#ff0000" }]);
     expect(issue.childCount).toBe(1);
     expect(issue.childrenCount).toBe(1);
     expect(issue.hasChildren).toBe(true);
