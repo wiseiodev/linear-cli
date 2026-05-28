@@ -1,3 +1,10 @@
+# [1.6.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.5.0...v1.6.0-alpha.1) (2026-05-28)
+
+
+### Features
+
+* **cli:** resolve issue workflow state by name on issues update ([#31](https://github.com/wiseiodev/linear-cli/issues/31)) ([6e22fba](https://github.com/wiseiodev/linear-cli/commit/6e22fba09e84df84aa5eafe6a3d8ab3172d4322e)), closes [#22](https://github.com/wiseiodev/linear-cli/issues/22) [#22](https://github.com/wiseiodev/linear-cli/issues/22)
+
 # [1.5.0](https://github.com/wiseiodev/linear-cli/compare/v1.4.0...v1.5.0) (2026-05-09)
 
 
