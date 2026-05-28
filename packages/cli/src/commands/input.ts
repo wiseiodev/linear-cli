@@ -21,3 +21,11 @@ export async function parseJsonInput(options: InputOptions): Promise<unknown> {
 
   return JSON.parse(text);
 }
+
+export async function parseOptionalJsonInput(options: InputOptions): Promise<unknown> {
+  if (!options.input && !options.inputFile) {
+    return {};
+  }
+
+  return parseJsonInput(options);
+}

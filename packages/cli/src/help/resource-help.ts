@@ -134,6 +134,8 @@ const resourceExamples: Record<string, ResourceExamples> = {
     update: {
       examples: [
         "linear issues update <id> --input '{\"priority\":2}'",
+        'linear issues update <id> --state "In Progress"',
+        'linear issues update <id> --input \'{"state":"In Progress"}\'',
         "linear issues update <id> --input-file payload.json --json",
       ],
     },

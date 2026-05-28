@@ -6,6 +6,7 @@ export * from "./config/schema.js";
 export * from "./entities/linear-gateway.js";
 export * from "./entities/models.js";
 export * from "./entities/sdk-types.js";
+export * from "./entities/state-resolver.js";
 export * from "./errors/core-error.js";
 export * from "./output/envelope.js";
 export * from "./token-store/composite-store.js";

@@ -50,6 +50,7 @@ import open from "open";
 import { runInteractiveOAuthLogin } from "./auth/login.js";
 import { buildAuthStatusReport } from "./auth/status-report.js";
 import { isIssueUpdateInput } from "./commands/issue-guards.js";
+import { normalizeIssueUpdateStatePayload } from "./commands/issue-state.js";
 import { registerIssuesBulkUpdate } from "./commands/issues-bulk-update.js";
 import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
@@ -571,18 +572,28 @@ export function createProgram(authManager = new AuthManager()): Command {
           templateId,
         });
       },
-      update: async (_manager, id, payload, cmd) =>
-        (await sessionGateway(cmd)).updateIssue(
+      update: async (_manager, id, payload, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
+        const normalized = await normalizeIssueUpdateStatePayload(
+          gateway,
+          id,
+          isRecord(payload) ? payload : {},
+          globals.state,
+        );
+        return gateway.updateIssue(
           id,
           ensurePayload(
-            payload,
+            normalized,
             isIssueUpdateInput,
             "Issue update payload must be a non-empty object.",
           ),
-        ),
+        );
+      },
       delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteIssue(id),
     },
     authManager,
+    { update: { allowEmptyInput: true } },
   );
 
   const issuesCommand = program.commands.find((command) => command.name() === "issues");

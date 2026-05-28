@@ -449,6 +449,7 @@ function toWorkflowState(record: SdkWorkflowStateLike): WorkflowStateRecord {
     description: record.description ?? undefined,
     type: record.type,
     color: record.color ?? undefined,
+    position: record.position,
     teamId: record.teamId,
     createdAt: toDateString(record.createdAt),
     updatedAt: toDateString(record.updatedAt),
@@ -1155,6 +1156,16 @@ export class LinearGateway {
       items: connection.nodes.map(toWorkflowState),
       nextCursor: connection.pageInfo.endCursor ?? null,
     };
+  }
+
+  public async listWorkflowStatesForTeam(teamId: string): Promise<readonly WorkflowStateRecord[]> {
+    // A single page of 250 covers every realistic team (states number in the
+    // dozens), so name resolution reads them in one request without paging.
+    const connection = await this.client.workflowStates({
+      filter: { team: { id: { eq: teamId } } },
+      first: 250,
+    });
+    return connection.nodes.map(toWorkflowState);
   }
 
   public async getWorkflowState(id: string): Promise<WorkflowStateRecord> {
