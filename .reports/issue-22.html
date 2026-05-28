@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>issue #22 — State-by-name resolver + issues update</title>
+    <style>
+      :root {
+        --bg: #0a0b0d;
+        --surface: #15181c;
+        --surface-2: #1b1f24;
+        --line: #24292f;
+        --line-soft: #1f2428;
+        --text: #e7eaee;
+        --text-dim: #8a9099;
+        --text-mute: #5b6470;
+        --accent: #1f7aed;
+        --accent-soft: #13335a;
+        --good: #4ade80;
+        --good-bg: #0f2e1e;
+        --warn: #fbbf24;
+        --warn-bg: #3a2b06;
+        --bad: #f87171;
+        --bad-bg: #3a1414;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: var(--bg); }
+      body {
+        color: var(--text);
+        font: 14px/1.55 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "cv11", "ss01", "tnum";
+      }
+      .page {
+        max-width: 960px;
+        margin: 40px auto;
+        padding: 40px 44px 32px;
+        background: var(--bg);
+      }
+      .page + .page { border-top: 1px solid var(--line-soft); margin-top: 0; }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-bottom: 20px;
+        margin-bottom: 28px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .eyebrow {
+        color: var(--text-mute);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+      }
+      .top h1 {
+        margin: 6px 0 0;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .top .meta {
+        text-align: right;
+        color: var(--text-dim);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line-soft);
+        border-radius: 14px;
+        padding: 20px 22px;
+        margin-bottom: 16px;
+      }
+      .card h2 {
+        margin: 0 0 2px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: -0.005em;
+      }
+      .card .sub {
+        color: var(--text-dim);
+        font-size: 12px;
+        margin-bottom: 14px;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 6px;
+      }
+      .hero-cell {
+        background: var(--surface-2);
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .hero-cell .k {
+        font-size: 10px;
+        color: var(--text-mute);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+      }
+      .hero-cell .v {
+        margin-top: 4px;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+      .hero-cell.good .v { color: var(--good); }
+      .hero-cell.warn .v { color: var(--warn); }
+      .hero-cell.bad  .v { color: var(--bad); }
+      ul, ol { margin: 0; padding-left: 18px; }
+      li { margin-bottom: 4px; color: var(--text); }
+      li::marker { color: var(--text-mute); }
+      code {
+        font: 12px ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+        background: var(--surface-2);
+        color: var(--text);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--line-soft);
+      }
+      pre {
+        font: 12px/1.55 ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+        background: var(--surface-2);
+        color: var(--text);
+        padding: 14px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line-soft);
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+      }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line-soft);
+        vertical-align: top;
+      }
+      th {
+        color: var(--text-mute);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+      }
+      tr:last-child td { border-bottom: none; }
+      td code { font-size: 11.5px; padding: 1px 5px; }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid transparent;
+      }
+      .pill::before {
+        content: "";
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .pill.good { color: var(--good); background: var(--good-bg); border-color: rgba(74,222,128,0.25); }
+      .pill.warn { color: var(--warn); background: var(--warn-bg); border-color: rgba(251,191,36,0.25); }
+      .pill.bad  { color: var(--bad);  background: var(--bad-bg);  border-color: rgba(248,113,113,0.25); }
+      .cta {
+        display: inline-block;
+        padding: 8px 14px;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.01em;
+      }
+      .checklist { list-style: none; padding-left: 0; }
+      .checklist li {
+        padding: 6px 0 6px 26px;
+        position: relative;
+        border-bottom: 1px solid var(--line-soft);
+        color: var(--text);
+      }
+      .checklist li:last-child { border-bottom: none; }
+      .checklist li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        top: 6px;
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        background: var(--good-bg);
+        color: var(--good);
+        font-size: 11px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(74,222,128,0.25);
+      }
+      .checklist li.todo { color: var(--text-dim); }
+      .checklist li.todo::before {
+        content: "";
+        background: var(--surface-2);
+        color: var(--text-mute);
+        border-color: var(--line);
+      }
+      .fallback-frame {
+        background: var(--surface-2);
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 22px;
+        text-align: center;
+      }
+      .video-caption {
+        margin-top: 10px;
+        color: var(--text-dim);
+        font-size: 12px;
+        text-align: center;
+      }
+      .foot {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-mute);
+        font-size: 11px;
+        margin-top: 24px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line-soft);
+      }
+      @media print {
+        body { background: #000; }
+        .page { margin: 0; max-width: 100%; padding: 24px 28px; page-break-after: always; }
+        .page:last-of-type { page-break-after: auto; }
+        .card { break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- PAGE 1 — SUMMARY -->
+    <section class="page">
+      <div class="top">
+        <div>
+          <div class="eyebrow">GitHub issue · #22 (parent #21)</div>
+          <h1>issue #22 · State-by-name resolver + issues update</h1>
+        </div>
+        <div class="meta">
+          <div>2026-05-27</div>
+          <div><code>wiseiodev/linear-cli</code></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>What shipped</h2>
+        <div class="sub">Plain-language summary of what landed in this slice.</div>
+        <ul>
+          <li>A reusable <code>resolveStateId</code> module in <code>@wiseiodev/linear-core</code> that maps a state reference (a UUID or a human name) to a <code>stateId</code> for a team, with an optional preferred-<code>type</code> fallback for later slices.</li>
+          <li><code>linear issues update ANN-1 --state "In Progress"</code> now works — no <code>--input</code> required.</li>
+          <li><code>--input '{"state":"In Progress"}'</code> and <code>--input '{"stateName":"In Progress"}'</code> resolve to the right <code>stateId</code> too.</li>
+          <li>Resolution is scoped to the target issue's team (the issue is fetched to read its <code>teamId</code>); a raw <code>stateId</code> UUID still passes through unchanged.</li>
+          <li>Unknown or ambiguous state names fail with a typed error that lists the team's valid states as <code>name (type)</code>; <code>state</code>/<code>stateName</code> keys are stripped before the payload reaches GraphQL.</li>
+          <li>New <code>listWorkflowStatesForTeam</code> gateway method (server-side team filter) and a <code>position</code> field on <code>WorkflowStateRecord</code>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Dependencies collected</h2>
+        <div class="sub">External values, credentials, or assets provided before implementation started.</div>
+        <table>
+          <thead><tr><th>Dependency</th><th>Value / status</th></tr></thead>
+          <tbody>
+            <tr><td>External dependencies</td><td><span class="pill good">None detected</span> — pure code change in an existing CLI/SDK monorepo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Files changed</h2>
+        <div class="sub">From <code>git show --stat</code>.</div>
+        <pre> .reports/issue-22-qa.md                            | 116 +++++++++++++++
+ packages/cli/src/commands/input.ts                 |   8 ++
+ packages/cli/src/commands/issue-state.ts           |  76 ++++++++++
+ packages/cli/src/commands/resource.ts              |  11 +-
+ packages/cli/src/help/resource-help.ts             |   2 +
+ packages/cli/src/index.ts                          |  19 ++-
+ packages/cli/tests/issue-state.test.ts             | 155 +++++++++++++++++++++
+ packages/linear-core/src/entities/linear-gateway.ts |  11 ++
+ packages/linear-core/src/entities/models.ts        |   1 +
+ packages/linear-core/src/entities/state-resolver.ts |  94 +++++++++++++
+ packages/linear-core/src/index.ts                  |   1 +
+ packages/linear-core/tests/state-resolver.test.ts  |  85 +++++++++++
+ 12 files changed, 573 insertions(+), 6 deletions(-)</pre>
+      </div>
+
+      <div class="card">
+        <h2>Tests added</h2>
+        <div class="sub">New automated cases landing with this work item.</div>
+        <table>
+          <thead><tr><th>File</th><th>Cases</th><th>Framework</th></tr></thead>
+          <tbody>
+            <tr><td><code>packages/linear-core/tests/state-resolver.test.ts</code></td><td>8</td><td>Vitest</td></tr>
+            <tr><td><code>packages/cli/tests/issue-state.test.ts</code></td><td>10</td><td>Vitest</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Quality gates</h2>
+        <div class="sub">All must pass with zero errors and zero warnings before commit.</div>
+        <table>
+          <thead><tr><th>Gate</th><th>Command</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Lint / format</td><td><code>pnpm check:write</code> (biome)</td><td><span class="pill good">Pass</span></td></tr>
+            <tr><td>Typecheck</td><td><code>pnpm typecheck</code> (turbo, 4 pkgs)</td><td><span class="pill good">Pass</span></td></tr>
+            <tr><td>Unit tests</td><td><code>pnpm test</code> — core 58, cli 60</td><td><span class="pill good">Pass</span></td></tr>
+            <tr><td>Build</td><td><code>pnpm build</code> (turbo, 4 pkgs)</td><td><span class="pill good">Pass</span></td></tr>
+            <tr><td>E2E</td><td>No E2E suite in this repo</td><td><span class="pill warn">N/A</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Adversarial review</h2>
+        <div class="sub">Two-reviewer debate (Architect + Skeptic), iterated until no critical or major findings remain.</div>
+        <div class="hero-grid">
+          <div class="hero-cell">
+            <div class="k">Iterations</div>
+            <div class="v">2</div>
+          </div>
+          <div class="hero-cell bad">
+            <div class="k">Critical / Major</div>
+            <div class="v">0 / 0</div>
+          </div>
+          <div class="hero-cell warn">
+            <div class="k">Minor</div>
+            <div class="v">0</div>
+          </div>
+          <div class="hero-cell good">
+            <div class="k">Nitpick</div>
+            <div class="v">0</div>
+          </div>
+        </div>
+        <div style="margin-top: 14px;">
+          <ul>
+            <li>Round 1 raised 2 "major" findings, both resolved by scope/PRD reasoning: (a) reusing the global <code>--state</code> as the setter on update is PRD-mandated ("no new flag required") — the update help now documents the setter usage; (b) <code>issues bulk-update</code> state-by-name is owned by sibling issue <strong>#27</strong>; this PR does not touch or regress it.</li>
+            <li>5 minor/nitpick findings fixed in code: undefined <code>position</code> now sorts last in the type fallback; only a non-empty <code>stateId</code> pre-empts resolution (empty/blank no longer leaks); <code>asString</code> trims so padded UUIDs short-circuit; explanatory comments added for the UUID short-circuit and the 250-state page cap.</li>
+            <li>Round 2 confirmed all three code fixes correct, no regressions, and <strong>zero remaining critical/major</strong> findings.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>work · issue #22</span>
+        <span>Page 1 of 2</span>
+      </div>
+    </section>
+
+    <!-- PAGE 2 — PROOF OF WORK -->
+    <section class="page">
+      <div class="top">
+        <div>
+          <div class="eyebrow">Proof of work</div>
+          <h1>Self-QA · issue #22</h1>
+        </div>
+        <div class="meta">
+          <div>2026-05-27</div>
+          <div><code>2328090</code></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Self-QA evidence (no video)</h2>
+        <div class="sub">This is a terminal CLI / SDK change with no browser surface, so a Playwright video is not applicable.</div>
+        <div class="fallback-frame">
+          <p style="margin:0;">Verification is documented in <code>issue-22-qa.md</code>: deterministic unit tests (18 new cases), a runtime demonstration against the built <code>@wiseiodev/linear-core</code> module, and a CLI help smoke test.</p>
+          <p style="margin:12px 0 0;"><a class="cta" href="./issue-22-qa.md">Open issue-22-qa.md</a></p>
+        </div>
+        <p class="video-caption">Fallback QA record — see the linked markdown for command transcripts and asserted outputs.</p>
+      </div>
+
+      <div class="card">
+        <h2>Scenarios covered</h2>
+        <div class="sub">Golden path and at least one edge case per acceptance criterion.</div>
+        <ul>
+          <li>UUID reference passes through unchanged without any team lookup (runtime demo + unit test).</li>
+          <li>Case-insensitive exact name match (<code>"in progress"</code> → the In Progress state).</li>
+          <li>Preferred-<code>type</code> fallback picks the lowest-<code>position</code> state; position-less states sort last.</li>
+          <li>Unknown name → typed <code>InvalidInput</code> error listing valid states as <code>name (type)</code>.</li>
+          <li>Ambiguous name (two states share a name) → typed error.</li>
+          <li><code>--state</code> flag, <code>state</code> key, and <code>stateName</code> key all fold into <code>stateId</code> scoped to the issue's team.</li>
+          <li>Explicit <code>stateId</code> left untouched and resolution skipped (no issue fetch); empty <code>stateId</code> no longer pre-empts <code>--state</code>.</li>
+          <li>Whitespace-padded UUID <code>--state</code> short-circuits without a fetch; no state provided → payload unchanged, no fetch.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Acceptance criteria</h2>
+        <div class="sub">Every box ticked before the commit was made.</div>
+        <ul class="checklist">
+          <li><code>issues update &lt;id&gt; --state "&lt;name&gt;"</code> sets the issue to the matching state</li>
+          <li><code>--input '{"stateName":"&lt;name&gt;"}'</code> and <code>--input '{"state":"&lt;name&gt;"}'</code> resolve to a <code>stateId</code></li>
+          <li><code>--input '{"stateId":"&lt;uuid&gt;"}'</code> continues to work unchanged</li>
+          <li>Resolution is scoped to the target issue's team</li>
+          <li>Unknown/ambiguous name errors with the team's valid state names listed</li>
+          <li><code>state</code>/<code>stateName</code> keys never reach GraphQL</li>
+          <li>Resolver unit tests cover UUID passthrough, name match, type fallback, not-found, ambiguous</li>
+          <li><code>issues update</code> normalization is tested (flag + JSON-key paths, stateId untouched)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Commit</h2>
+        <div class="sub">Local commit on the feature branch; pushed when the PR was opened.</div>
+        <p style="margin: 0 0 10px;"><span class="cta">2328090</span> <code style="margin-left: 8px;">232809087720ffd05afc39a39a43bba672957b3c</code></p>
+        <pre>feat(cli): resolve issue workflow state by name on issues update
+
+Add a reusable workflow-state resolver in linear-core that maps a state
+reference (UUID or human name) to a stateId for a team, and wire it into
+`issues update` so agents can set state with `--state "In Progress"` or
+`--input '{"state":"..."}'`/`'{"stateName":"..."}'`. Resolution is scoped
+to the target issue's team; an explicit stateId UUID still passes through
+unchanged; state/stateName keys are stripped before reaching GraphQL.
+Unknown or ambiguous names error with the team's valid states listed.
+
+Refs: #22</pre>
+      </div>
+
+      <div class="foot">
+        <span>work · issue #22</span>
+        <span>Page 2 of 2</span>
+      </div>
+    </section>
+
+  </body>
+</html>
