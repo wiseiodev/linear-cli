@@ -247,6 +247,7 @@ export interface WorkflowStateRecord {
   readonly description?: string;
   readonly type: string;
   readonly color?: string;
+  readonly position?: number;
   readonly teamId?: string;
   readonly createdAt: string;
   readonly updatedAt: string;

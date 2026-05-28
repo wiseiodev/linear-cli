@@ -9,7 +9,7 @@ import type { Command } from "commander";
 import { renderEnvelope } from "../formatters/output.js";
 import { getResourceHelpTexts } from "../help/resource-help.js";
 import { getGlobalOptions } from "../runtime/options.js";
-import { parseJsonInput } from "./input.js";
+import { parseJsonInput, parseOptionalJsonInput } from "./input.js";
 
 interface ResourceHandlers {
   readonly list?: (manager: AuthManager, command: Command) => Promise<unknown>;
@@ -56,12 +56,17 @@ async function executeAction(
   }
 }
 
+export interface ResourceCommandOptions {
+  readonly update?: { readonly allowEmptyInput?: boolean };
+}
+
 export function registerResourceCommand(
   program: Command,
   entity: LinearEntity,
   description: string,
   handlers: ResourceHandlers,
   authManager: AuthManager,
+  options: ResourceCommandOptions = {},
 ): Command {
   const command = program.command(entity).description(description);
   const helpTexts = getResourceHelpTexts(entity);
@@ -122,7 +127,9 @@ export function registerResourceCommand(
       .option("--input-file <path>", "JSON payload file")
       .action(async (id, opts, cmd) =>
         executeAction(entity, "update", cmd, async () => {
-          const payload = await parseJsonInput(opts);
+          const payload = options.update?.allowEmptyInput
+            ? await parseOptionalJsonInput(opts)
+            : await parseJsonInput(opts);
           return updateHandler(authManager, id, payload, cmd);
         }),
       );

@@ -80,6 +80,43 @@ linear issues update --help
 linear docs
 ```
 
+## Set Issue State By Name
+
+You do not need a `stateId` UUID to change an issue's state. Pass the state name and the CLI resolves it against the target issue's team:
+
+```bash
+linear issues update ENG-123 --state "In Progress" --json
+linear issues update ENG-123 --input '{"state":"In Progress"}' --json
+linear issues update ENG-123 --input '{"stateName":"In Progress"}' --json
+```
+
+All three are equivalent. A raw `stateId` UUID still works and is used as-is:
+
+```bash
+linear issues update ENG-123 --input '{"stateId":"<uuid>"}' --json
+```
+
+Notes:
+
+- Resolution is scoped to the issue's own team, so the same name (e.g. "In Progress") maps to the right team's state.
+- The match is case-insensitive and ignores surrounding whitespace.
+- An unknown or ambiguous name fails with an error that lists the team's valid states as `name (type)`, so you can correct it in one step instead of guessing.
+- To discover the exact names yourself, list the workflow states:
+
+```bash
+linear states list --json
+```
+
+## Common Mistakes
+
+These are the patterns agents reach for that do not work, with the command that does:
+
+| Goal | Do not use | Use instead |
+| --- | --- | --- |
+| Set an issue's state | Hand-crafting or guessing a `stateId` UUID | `linear issues update <id> --state "In Progress"` (or `--input '{"state":"In Progress"}'`; the name resolves automatically) |
+| Discover workflow states | `linear statuses`, `linear workflow-states`, `linear list-states` | `linear states list --json` |
+| Read one issue | `linear issues view <id>` / `linear issues show <id>` | `linear issues get <id> --json` |
+
 ## Batch Workflows
 
 Use `bulk-update` for multi-issue updates. Start with `--dry-run` and inspect the per-issue result before writing:

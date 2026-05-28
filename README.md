@@ -67,6 +67,7 @@ linear issues list --limit 10
 linear issues branch ANN-123 --json
 linear issues browse
 linear issues create --input '{"title":"Investigate bug","teamId":"<team-id>"}'
+linear issues update ANN-123 --state "In Progress"   # set state by name, no stateId needed
 linear projects list
 linear documents list
 
