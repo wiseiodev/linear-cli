@@ -84,6 +84,25 @@ describe("skills catalog", () => {
     expect(content).toContain("Fixes ENG-123, DES-5 and ENG-256");
   });
 
+  test("documents setting issue state by name", async () => {
+    const skill = getSkill("linear-cli");
+    if (!skill) {
+      throw new Error("Expected linear-cli skill in catalog");
+    }
+
+    const repoRelativePath = skill.repoPath.replace("wiseiodev/linear-cli/", "");
+    const content = await readFile(
+      new URL(`../../../${repoRelativePath}/SKILL.md`, import.meta.url),
+      "utf8",
+    );
+
+    expect(content).toContain("## Set Issue State By Name");
+    expect(content).toContain('linear issues update ENG-123 --state "In Progress" --json');
+    expect(content).toContain('linear issues update ENG-123 --input \'{"state":"In Progress"}\'');
+    expect(content).toContain("linear states list --json");
+    expect(content).toContain("## Common Mistakes");
+  });
+
   test("fails gracefully for unknown skill", async () => {
     const executor = new StubExecutor();
     const result = await installSkill("not-real", executor);

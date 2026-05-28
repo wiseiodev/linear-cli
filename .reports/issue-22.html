@@ -268,6 +268,7 @@
           <li>Resolution is scoped to the target issue's team (the issue is fetched to read its <code>teamId</code>); a raw <code>stateId</code> UUID still passes through unchanged.</li>
           <li>Unknown or ambiguous state names fail with a typed error that lists the team's valid states as <code>name (type)</code>; <code>state</code>/<code>stateName</code> keys are stripped before the payload reaches GraphQL.</li>
           <li>New <code>listWorkflowStatesForTeam</code> gateway method (server-side team filter) and a <code>position</code> field on <code>WorkflowStateRecord</code>.</li>
+          <li>Agent-facing guidance shipped with the feature: a "Set Issue State By Name" + "Common Mistakes" section in the bundled <code>linear-cli</code> skill, a setter-guidance block in <code>issues update --help</code>, a README example, and state-by-name hints in the <code>issue-triage</code>/<code>cycle-planning</code> skills.</li>
         </ul>
       </div>
 

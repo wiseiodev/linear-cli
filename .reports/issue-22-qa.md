@@ -107,6 +107,20 @@ Runtime demonstration against the built `@wiseiodev/linear-core` module:
 CLI help smoke test (`node packages/cli/dist/bin/linear.js issues update --help`) confirms the
 `update` command exists and exposes the `--state <name>` global option.
 
+## Docs & agent hints
+
+Because the CLI's primary users are coding agents, this slice also ships the guidance for the
+feature it adds:
+
+- `assets/skills/linear-cli/SKILL.md` — new "Set Issue State By Name" section and a "Common
+  Mistakes → correct command" table; locked by a new skills-catalog test assertion.
+- `issues update --help` — a setter-guidance block (verified via `linear issues update --help`):
+  set state by name, unknown names list valid states, raw stateId used as-is, discover with
+  `linear states list --json`.
+- `README.md` — an `issues update --state "In Progress"` example in the command list.
+- `assets/skills/issue-triage/SKILL.md` and `assets/skills/cycle-planning/SKILL.md` — a concrete
+  state-by-name command hint where each playbook applies its decision.
+
 ## Follow-up flag
 
 End-to-end execution against the live Linear API (real auth + a real issue) was not run because

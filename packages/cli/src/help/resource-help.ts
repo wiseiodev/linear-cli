@@ -87,6 +87,7 @@ interface CreateHelp {
 
 interface UpdateHelp {
   readonly examples: readonly string[];
+  readonly notes?: readonly string[];
 }
 
 interface ListHelp {
@@ -132,6 +133,12 @@ const resourceExamples: Record<string, ResourceExamples> = {
       ],
     },
     update: {
+      notes: [
+        'Set workflow state by name (no stateId needed): --state "In Progress",',
+        'or include "state"/"stateName" in --input. Resolved against the issue\'s team.',
+        "An unknown or ambiguous name lists the team's valid states; a raw stateId is used as-is.",
+        "Discover names with: linear states list --json",
+      ],
       examples: [
         "linear issues update <id> --input '{\"priority\":2}'",
         'linear issues update <id> --state "In Progress"',
@@ -422,7 +429,8 @@ function createHelp(entity: string, help: CreateHelp): string {
 }
 
 function updateHelp(entity: string, help: UpdateHelp): string {
-  return `\nUpdate accepts any non-empty JSON payload.\n\nExamples:\n${joinExamples(help.examples)}\n\n${inputDocsHint(entity)}`;
+  const notes = help.notes && help.notes.length > 0 ? `\n\n${indentLines(help.notes)}` : "";
+  return `\nUpdate accepts any non-empty JSON payload.${notes}\n\nExamples:\n${joinExamples(help.examples)}\n\n${inputDocsHint(entity)}`;
 }
 
 export interface ResourceHelpTexts {
