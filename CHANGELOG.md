@@ -1,3 +1,10 @@
+# [1.6.0-alpha.2](https://github.com/wiseiodev/linear-cli/compare/v1.6.0-alpha.1...v1.6.0-alpha.2) (2026-05-30)
+
+
+### Features
+
+* complete agent issue UX ([#32](https://github.com/wiseiodev/linear-cli/issues/32)) ([9aacd90](https://github.com/wiseiodev/linear-cli/commit/9aacd902da680d76c1af7422857a0622386537ba))
+
 # [1.6.0-alpha.1](https://github.com/wiseiodev/linear-cli/compare/v1.5.0...v1.6.0-alpha.1) (2026-05-28)
 
 
