@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
@@ -50,7 +50,11 @@ import open from "open";
 import { runInteractiveOAuthLogin } from "./auth/login.js";
 import { buildAuthStatusReport } from "./auth/status-report.js";
 import { isIssueUpdateInput } from "./commands/issue-guards.js";
-import { normalizeIssueUpdateStatePayload } from "./commands/issue-state.js";
+import {
+  normalizeIssueCreateStatePayload,
+  normalizeIssueUpdateStatePayload,
+} from "./commands/issue-state.js";
+import { runPrep, runPrReady } from "./commands/issue-workflow.js";
 import { registerIssuesBulkUpdate } from "./commands/issues-bulk-update.js";
 import { registerResourceCommand } from "./commands/resource.js";
 import { renderEnvelope } from "./formatters/output.js";
@@ -116,6 +120,76 @@ function isIssueCreateInput(value: unknown): value is SdkIssueInput {
     hasString(value, "teamId") &&
     (hasString(value, "title") || hasString(value, "templateId"))
   );
+}
+
+function assertBoundedIssuesList(globals: ReturnType<typeof getGlobalOptions>): void {
+  const hasNarrowing = Boolean(
+    globals.team ||
+      globals.mine ||
+      globals.state ||
+      globals.status ||
+      globals.assignee ||
+      globals.label ||
+      globals.priority ||
+      globals.query ||
+      globals.project ||
+      globals.cycle ||
+      globals.parent ||
+      globals.filter ||
+      globals.updatedAfter ||
+      globals.createdAfter ||
+      globals.limit !== undefined,
+  );
+
+  if (hasNarrowing) {
+    return;
+  }
+
+  throw new Error(
+    'Refusing to run an unbounded issues list. Narrow it with --mine, --state "In Progress", --query <text>, --limit N, --team <key>, or another filter.',
+  );
+}
+
+function buildBinaryReport() {
+  const executable = process.argv[1] ? path.resolve(process.argv[1]) : undefined;
+  const pathEntries = (process.env.PATH ?? "").split(path.delimiter).filter(Boolean);
+  const seen = new Set<string>();
+  const candidates: Array<{ command: "linear" | "li"; path: string; current: boolean }> = [];
+
+  const normalize = (value: string) => {
+    try {
+      return realpathSync(value);
+    } catch {
+      return path.resolve(value);
+    }
+  };
+
+  const current = executable ? normalize(executable) : undefined;
+  for (const entry of pathEntries) {
+    for (const command of ["linear", "li"] as const) {
+      const candidate = path.join(entry, command);
+      if (!existsSync(candidate)) {
+        continue;
+      }
+      const resolved = normalize(candidate);
+      const key = `${command}\n${resolved}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      candidates.push({
+        command,
+        path: resolved,
+        current: current !== undefined && resolved === current,
+      });
+    }
+  }
+
+  return {
+    executable,
+    onPath: candidates.some((candidate) => candidate.current),
+    candidates,
+  };
 }
 
 function isInitiativeCreateInput(value: unknown): value is SdkInitiativeInput {
@@ -294,6 +368,8 @@ async function resolveIssueTemplateId(
 export function createProgram(authManager = new AuthManager()): Command {
   const program = new Command();
   program.configureHelp({ showGlobalOptions: true });
+  program.showSuggestionAfterError();
+  program.showHelpAfterError();
 
   program
     .name("linear")
@@ -535,6 +611,7 @@ export function createProgram(authManager = new AuthManager()): Command {
     {
       list: async (_manager, cmd) => {
         const globals = getGlobalOptions(cmd);
+        assertBoundedIssuesList(globals);
         const viewerName = await resolveViewerName(cmd);
         const gateway = await sessionGateway(cmd);
         const parentId = globals.parent ? await gateway.resolveIssueId(globals.parent) : undefined;
@@ -547,6 +624,8 @@ export function createProgram(authManager = new AuthManager()): Command {
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getIssue(id),
       create: async (_manager, payload, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        const gateway = await sessionGateway(cmd);
         const templateReference = cmd.opts<{ template?: string }>().template;
         const payloadWithTemplateReference =
           templateReference && isRecord(payload)
@@ -555,17 +634,21 @@ export function createProgram(authManager = new AuthManager()): Command {
                 templateId: templateReference,
               }
             : payload;
+        const normalized = await normalizeIssueCreateStatePayload(
+          gateway,
+          isRecord(payloadWithTemplateReference) ? payloadWithTemplateReference : {},
+          globals.state,
+        );
         const issueInput = ensurePayload(
-          payloadWithTemplateReference,
+          normalized,
           isIssueCreateInput,
           "Issue create payload requires teamId plus title or templateId.",
         );
 
         if (!templateReference) {
-          return (await sessionGateway(cmd)).createIssue(issueInput);
+          return gateway.createIssue(issueInput);
         }
 
-        const gateway = await sessionGateway(cmd);
         const templateId = await resolveIssueTemplateId(gateway, templateReference);
         return gateway.createIssue({
           ...issueInput,
@@ -593,7 +676,7 @@ export function createProgram(authManager = new AuthManager()): Command {
       delete: async (_manager, id, cmd) => (await sessionGateway(cmd)).deleteIssue(id),
     },
     authManager,
-    { update: { allowEmptyInput: true } },
+    { list: { rejectPositionals: true }, update: { allowEmptyInput: true } },
   );
 
   const issuesCommand = program.commands.find((command) => command.name() === "issues");
@@ -1067,16 +1150,20 @@ export function createProgram(authManager = new AuthManager()): Command {
     authManager,
   );
 
-  registerResourceCommand(
+  const commentsCommand = registerResourceCommand(
     program,
     "comments",
     "Comment commands",
     {
       list: async (_manager, cmd) => {
         const globals = getGlobalOptions(cmd);
-        return (await sessionGateway(cmd)).listComments({
+        const issueRef = cmd.opts<{ issue?: string }>().issue;
+        const gateway = await sessionGateway(cmd);
+        const issueId = issueRef ? await gateway.resolveIssueId(issueRef) : undefined;
+        return gateway.listComments({
           limit: globals.limit,
           cursor: globals.cursor,
+          issueId,
         });
       },
       get: async (_manager, id, cmd) => (await sessionGateway(cmd)).getComment(id),
@@ -1097,6 +1184,9 @@ export function createProgram(authManager = new AuthManager()): Command {
     },
     authManager,
   );
+  commentsCommand.commands
+    .find((command) => command.name() === "list")
+    ?.option("--issue <id-or-identifier>", "Only list comments for this issue");
 
   registerResourceCommand(
     program,
@@ -1191,7 +1281,7 @@ export function createProgram(authManager = new AuthManager()): Command {
     authManager,
   );
 
-  registerResourceCommand(
+  const statesCommand = registerResourceCommand(
     program,
     "states",
     "Workflow state commands",
@@ -1225,10 +1315,71 @@ export function createProgram(authManager = new AuthManager()): Command {
     },
     authManager,
   );
+  statesCommand.aliases(["statuses", "workflow-states"]);
+
+  program
+    .command("prep")
+    .description("Prepare to work an issue: fetch context, branch name, and move it in progress")
+    .argument("<id-or-identifier>", "Issue id (UUID) or identifier (e.g. ANN-123)")
+    .option("--state <name>", "State to move to (default: In Progress, then first started state)")
+    .action(async (idOrIdentifier, opts: { state?: string }, cmd) => {
+      const globals = getGlobalOptions(cmd);
+      try {
+        const data = await runPrep(
+          await sessionGateway(cmd),
+          idOrIdentifier,
+          opts.state ?? globals.state,
+        );
+        renderEnvelope(successEnvelope("issues", "update", data), globals);
+      } catch (error) {
+        const normalized = normalizeError(error);
+        renderEnvelope(
+          errorEnvelope("issues", "update", {
+            code: normalized.code,
+            message: normalized.message,
+            details: normalized.details,
+          }),
+          globals,
+        );
+        process.exitCode = 1;
+      }
+    });
+
+  program
+    .command("pr-ready")
+    .description("Move an issue to review and optionally post a PR or review comment")
+    .argument("<id-or-identifier>", "Issue id (UUID) or identifier (e.g. ANN-123)")
+    .option("--state <name>", "Review state name (default: In Review)")
+    .option("--comment <body>", "Comment body to post after moving the issue")
+    .option("--pr <url>", "Pull request URL to link in a comment")
+    .action(
+      async (idOrIdentifier, opts: { state?: string; comment?: string; pr?: string }, cmd) => {
+        const globals = getGlobalOptions(cmd);
+        try {
+          const data = await runPrReady(await sessionGateway(cmd), idOrIdentifier, {
+            state: opts.state ?? globals.state,
+            comment: opts.comment,
+            pr: opts.pr,
+          });
+          renderEnvelope(successEnvelope("issues", "update", data), globals);
+        } catch (error) {
+          const normalized = normalizeError(error);
+          renderEnvelope(
+            errorEnvelope("issues", "update", {
+              code: normalized.code,
+              message: normalized.message,
+              details: normalized.details,
+            }),
+            globals,
+          );
+          process.exitCode = 1;
+        }
+      },
+    );
 
   program
     .command("doctor")
-    .description("Validate auth, profile, API connectivity, and rate limits")
+    .description("Validate auth, profile, API connectivity, rate limits, and binary install")
     .action(async (_, cmd) => {
       const globals = getGlobalOptions(cmd);
 
@@ -1247,6 +1398,7 @@ export function createProgram(authManager = new AuthManager()): Command {
               email: viewer.email,
             },
             rateLimit,
+            binary: buildBinaryReport(),
           }),
           globals,
         );

@@ -7,6 +7,7 @@ import { LinearCoreError } from "@wiseiodev/linear-core";
 import { describe, expect, test } from "vitest";
 import {
   exitCodeForBulk,
+  normalizeBulkUpdateInput,
   parseBulkUpdateInput,
   readBulkInput,
   runBulkUpdate,
@@ -38,6 +39,9 @@ function makeGateway(handlers: {
 }): {
   gateway: {
     getIssue: (id: string) => Promise<IssueRecord>;
+    listWorkflowStatesForTeam: (
+      teamId: string,
+    ) => Promise<Array<{ id: string; name: string; type: string; position?: number }>>;
     updateIssue: (id: string, input: SdkIssueUpdateInput) => Promise<IssueRecord>;
   };
   calls: RecordedCall[];
@@ -53,6 +57,10 @@ function makeGateway(handlers: {
         }
         return handlers.getIssue(id);
       },
+      listWorkflowStatesForTeam: async (_teamId) => [
+        { id: "state-todo", name: "Todo", type: "unstarted", position: 1 },
+        { id: "state-progress", name: "In Progress", type: "started", position: 2 },
+      ],
       updateIssue: async (id, input) => {
         calls.push({ type: "update", id, input });
         if (!handlers.updateIssue) {
@@ -159,6 +167,12 @@ describe("parseBulkUpdateInput", () => {
       }),
     ).rejects.toThrow(/10 or less/);
   });
+
+  test("allows --state-only shared-payload mode", async () => {
+    const parsed = await parseBulkUpdateInput({ ids: "ANN-1" }, "In Progress");
+
+    expect(parsed.items).toEqual([{ id: "ANN-1", payload: {} }]);
+  });
 });
 
 describe("readBulkInput", () => {
@@ -179,6 +193,35 @@ describe("readBulkInput", () => {
 });
 
 describe("runBulkUpdate", () => {
+  test("normalizes state names before running shared updates", async () => {
+    const { gateway, calls } = makeGateway({
+      getIssue: async (id) => makeIssue({ id: `uuid-${id}`, identifier: id, teamId: "team-1" }),
+      updateIssue: async (id, input) =>
+        makeIssue({ id: `uuid-${id}`, identifier: id, stateId: input.stateId }),
+    });
+
+    const normalized = await normalizeBulkUpdateInput(
+      gateway,
+      {
+        dryRun: false,
+        concurrency: 1,
+        items: [
+          { id: "ANN-1", payload: { state: "Todo" } },
+          { id: "ANN-2", payload: { state: "Todo" } },
+        ],
+      },
+      undefined,
+    );
+    const data = await runBulkUpdate(gateway, normalized);
+
+    expect(normalized.items).toEqual([
+      { id: "ANN-1", payload: { stateId: "state-todo" } },
+      { id: "ANN-2", payload: { stateId: "state-todo" } },
+    ]);
+    expect(calls.filter((call) => call.type === "get")).toHaveLength(2);
+    expect(data.failed).toBe(0);
+  });
+
   test("dry-run returns planned entries and never calls updateIssue", async () => {
     const { gateway, calls } = makeGateway({
       getIssue: async (id) => makeIssue({ id: `uuid-${id}`, identifier: id }),

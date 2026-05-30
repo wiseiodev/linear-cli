@@ -10,6 +10,7 @@ import { renderEnvelope } from "../formatters/output.js";
 import { getGlobalOptions } from "../runtime/options.js";
 import { parseJsonInput } from "./input.js";
 import { isIssueUpdateInput } from "./issue-guards.js";
+import { normalizeIssueBulkUpdateStatePayloads } from "./issue-state.js";
 
 export interface BulkUpdateRawOptions {
   readonly ids?: string;
@@ -114,6 +115,7 @@ async function readStdin(stdin: StdinLike): Promise<string> {
 export async function readBulkInput(
   options: BulkUpdateRawOptions,
   stdin: StdinLike = process.stdin,
+  stateFlag?: string,
 ): Promise<unknown> {
   if (options.input === "-") {
     if (options.inputFile) {
@@ -127,6 +129,9 @@ export async function readBulkInput(
   }
 
   if (!options.input && !options.inputFile) {
+    if (stateFlag) {
+      return {};
+    }
     throw new Error("Missing input. Provide --input, --input-file, or --input -.");
   }
 
@@ -138,10 +143,11 @@ export async function readBulkInput(
 
 export async function parseBulkUpdateInput(
   options: BulkUpdateRawOptions,
+  stateFlag?: string,
 ): Promise<ParsedBulkUpdate> {
   const dryRun = options.dryRun === true;
   const concurrency = parseConcurrency(options.concurrency);
-  const parsed = await readBulkInput(options);
+  const parsed = await readBulkInput(options, process.stdin, stateFlag);
 
   if (Array.isArray(parsed)) {
     if (options.ids) {
@@ -175,10 +181,10 @@ export async function parseBulkUpdateInput(
   if (ids.length === 0) {
     throw new Error("--ids was empty.");
   }
-  if (!isIssueUpdateInput(parsed)) {
+  if (!isIssueUpdateInput(parsed) && !stateFlag) {
     throw new Error("Issue update payload must be a non-empty object.");
   }
-  const sharedPayload = parsed;
+  const sharedPayload = isRecord(parsed) ? parsed : {};
   return {
     dryRun,
     concurrency,
@@ -188,6 +194,7 @@ export async function parseBulkUpdateInput(
 
 interface BulkGateway {
   getIssue(id: string): Promise<IssueRecord>;
+  listWorkflowStatesForTeam: LinearGateway["listWorkflowStatesForTeam"];
   updateIssue(id: string, input: SdkIssueUpdateInput): Promise<IssueRecord>;
 }
 
@@ -262,6 +269,28 @@ export async function runBulkUpdate(
   };
 }
 
+export async function normalizeBulkUpdateInput(
+  gateway: BulkGateway,
+  parsed: ParsedBulkUpdate,
+  stateFlag: string | undefined,
+): Promise<ParsedBulkUpdate> {
+  const normalizedItems = await normalizeIssueBulkUpdateStatePayloads(
+    gateway,
+    parsed.items.map((item) => ({ ...item, payload: item.payload as Record<string, unknown> })),
+    stateFlag,
+  );
+
+  return {
+    ...parsed,
+    items: normalizedItems.map((item) => {
+      if (!isIssueUpdateInput(item.payload)) {
+        throw new Error(`Issue update payload for ${item.id} must be a non-empty object.`);
+      }
+      return { id: item.id, payload: item.payload };
+    }),
+  };
+}
+
 export function exitCodeForBulk(data: BulkUpdateData): number {
   if (data.failed === 0) {
     return 0;
@@ -273,7 +302,7 @@ export function exitCodeForBulk(data: BulkUpdateData): number {
 }
 
 export function registerIssuesBulkUpdate(issuesCommand: Command, authManager: AuthManager): void {
-  issuesCommand
+  const command = issuesCommand
     .command("bulk-update")
     .description(
       "Apply updates to many issues in one pass. Linear only updates fields present in the payload; relations, labels, and comments stay intact unless removal fields are supplied.",
@@ -288,46 +317,61 @@ export function registerIssuesBulkUpdate(issuesCommand: Command, authManager: Au
     .option(
       "--concurrency <n>",
       `Max parallel updates, 1-${MAX_CONCURRENCY} (default ${DEFAULT_CONCURRENCY})`,
-    )
-    .action(async (opts: BulkUpdateRawOptions, cmd: Command) => {
-      const globals = getGlobalOptions(cmd);
-      let parsed: ParsedBulkUpdate;
-      try {
-        parsed = await parseBulkUpdateInput(opts);
-      } catch (error) {
-        const normalized = normalizeError(error);
-        renderEnvelope(
-          errorEnvelope("issues", "update", {
-            code: normalized.code,
-            message: normalized.message,
-            details: normalized.details,
-          }),
-          globals,
-        );
-        process.exitCode = 1;
-        return;
-      }
+    );
 
-      try {
-        const session = await authManager.openSession({ profile: globals.profile });
-        const gateway: BulkGateway = session.gateway as LinearGateway;
-        const data = await runBulkUpdate(gateway, parsed);
-        renderEnvelope(successEnvelope("issues", "update", data), globals);
-        const code = exitCodeForBulk(data);
-        if (code !== 0) {
-          process.exitCode = code;
-        }
-      } catch (error) {
-        const normalized = normalizeError(error);
-        renderEnvelope(
-          errorEnvelope("issues", "update", {
-            code: normalized.code,
-            message: normalized.message,
-            details: normalized.details,
-          }),
-          globals,
-        );
-        process.exitCode = 1;
+  command.addHelpText(
+    "after",
+    `
+Examples:
+  linear issues bulk-update --ids ANN-1,ANN-2 --state "In Progress" --dry-run --json
+  linear issues bulk-update --ids ANN-1,ANN-2 --input '{"priority":2}' --json
+  linear issues bulk-update --input-file updates.json --dry-run --json
+
+State by name:
+  Pass --state once, or include "state"/"stateName" in the input payload. Names are resolved per issue team; stateId still works as-is.
+`,
+  );
+
+  command.action(async (opts: BulkUpdateRawOptions, cmd: Command) => {
+    const globals = getGlobalOptions(cmd);
+    let parsed: ParsedBulkUpdate;
+    try {
+      parsed = await parseBulkUpdateInput(opts, globals.state);
+    } catch (error) {
+      const normalized = normalizeError(error);
+      renderEnvelope(
+        errorEnvelope("issues", "update", {
+          code: normalized.code,
+          message: normalized.message,
+          details: normalized.details,
+        }),
+        globals,
+      );
+      process.exitCode = 1;
+      return;
+    }
+
+    try {
+      const session = await authManager.openSession({ profile: globals.profile });
+      const gateway: BulkGateway = session.gateway as LinearGateway;
+      const normalized = await normalizeBulkUpdateInput(gateway, parsed, globals.state);
+      const data = await runBulkUpdate(gateway, normalized);
+      renderEnvelope(successEnvelope("issues", "update", data), globals);
+      const code = exitCodeForBulk(data);
+      if (code !== 0) {
+        process.exitCode = code;
       }
-    });
+    } catch (error) {
+      const normalized = normalizeError(error);
+      renderEnvelope(
+        errorEnvelope("issues", "update", {
+          code: normalized.code,
+          message: normalized.message,
+          details: normalized.details,
+        }),
+        globals,
+      );
+      process.exitCode = 1;
+    }
+  });
 }

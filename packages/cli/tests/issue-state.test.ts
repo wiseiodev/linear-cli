@@ -2,6 +2,8 @@ import type { IssueRecord, ResolvableWorkflowState } from "@wiseiodev/linear-cor
 import { describe, expect, test, vi } from "vitest";
 import {
   type IssueStateGateway,
+  normalizeIssueBulkUpdateStatePayloads,
+  normalizeIssueCreateStatePayload,
   normalizeIssueUpdateStatePayload,
 } from "../src/commands/issue-state.js";
 
@@ -151,5 +153,100 @@ describe("normalizeIssueUpdateStatePayload", () => {
     await expect(normalizeIssueUpdateStatePayload(gateway, "ANN-1", {}, "Bogus")).rejects.toThrow(
       /In Progress \(started\)/,
     );
+  });
+});
+
+describe("normalizeIssueCreateStatePayload", () => {
+  test("resolves the --state flag against the create payload team", async () => {
+    const { gateway, listWorkflowStatesForTeam } = makeGateway();
+
+    const result = await normalizeIssueCreateStatePayload(
+      gateway,
+      { teamId: "team-1", title: "Demo" },
+      "Todo",
+    );
+
+    expect(result).toEqual({ teamId: "team-1", title: "Demo", stateId: "s-todo" });
+    expect(listWorkflowStatesForTeam).toHaveBeenCalledWith("team-1");
+  });
+
+  test("resolves state/stateName payload keys and strips them", async () => {
+    const { gateway } = makeGateway();
+
+    await expect(
+      normalizeIssueCreateStatePayload(
+        gateway,
+        { teamId: "team-1", title: "Demo", state: "In Progress" },
+        undefined,
+      ),
+    ).resolves.toEqual({ teamId: "team-1", title: "Demo", stateId: "s-progress" });
+
+    await expect(
+      normalizeIssueCreateStatePayload(
+        gateway,
+        { teamId: "team-1", title: "Demo", stateName: "Todo" },
+        undefined,
+      ),
+    ).resolves.toEqual({ teamId: "team-1", title: "Demo", stateId: "s-todo" });
+  });
+
+  test("keeps explicit stateId and strips state names without listing states", async () => {
+    const { gateway, listWorkflowStatesForTeam } = makeGateway();
+
+    const result = await normalizeIssueCreateStatePayload(
+      gateway,
+      { teamId: "team-1", title: "Demo", stateId: "state-explicit", state: "Todo" },
+      "In Progress",
+    );
+
+    expect(result).toEqual({ teamId: "team-1", title: "Demo", stateId: "state-explicit" });
+    expect(listWorkflowStatesForTeam).not.toHaveBeenCalled();
+  });
+
+  test("fails clearly when a create state name has no teamId", async () => {
+    const { gateway } = makeGateway();
+
+    await expect(
+      normalizeIssueCreateStatePayload(gateway, { title: "Demo" }, "Todo"),
+    ).rejects.toThrow(/teamId is missing/);
+  });
+});
+
+describe("normalizeIssueBulkUpdateStatePayloads", () => {
+  test("resolves one state flag per distinct team and strips name keys", async () => {
+    const issueA = makeIssue({ id: "issue-a", identifier: "ANN-1", teamId: "team-1" });
+    const issueB = makeIssue({ id: "issue-b", identifier: "ANN-2", teamId: "team-1" });
+    const getIssue = vi.fn(async (id: string) => (id === "ANN-1" ? issueA : issueB));
+    const listWorkflowStatesForTeam = vi.fn(async () => STATES);
+    const gateway: IssueStateGateway = { getIssue, listWorkflowStatesForTeam };
+
+    const result = await normalizeIssueBulkUpdateStatePayloads(
+      gateway,
+      [
+        { id: "ANN-1", payload: { title: "A", stateName: "Todo" } },
+        { id: "ANN-2", payload: { title: "B" } },
+      ],
+      "In Progress",
+    );
+
+    expect(result).toEqual([
+      { id: "ANN-1", payload: { title: "A", stateId: "s-progress" } },
+      { id: "ANN-2", payload: { title: "B", stateId: "s-progress" } },
+    ]);
+    expect(getIssue).toHaveBeenCalledTimes(2);
+    expect(listWorkflowStatesForTeam).toHaveBeenCalledTimes(1);
+  });
+
+  test("explicit stateId wins per bulk item", async () => {
+    const { gateway, getIssue } = makeGateway();
+
+    const result = await normalizeIssueBulkUpdateStatePayloads(
+      gateway,
+      [{ id: "ANN-1", payload: { stateId: "explicit", state: "Todo" } }],
+      "In Progress",
+    );
+
+    expect(result).toEqual([{ id: "ANN-1", payload: { stateId: "explicit" } }]);
+    expect(getIssue).not.toHaveBeenCalled();
   });
 });

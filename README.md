@@ -31,7 +31,7 @@ pnpm verify
 
 ```bash
 pnpm --filter @wiseiodev/linear-cli dev --help
-pnpm --filter @wiseiodev/linear-cli dev issues list --json
+pnpm --filter @wiseiodev/linear-cli dev issues list --limit 10 --json
 ```
 
 ## Help Discovery
@@ -67,7 +67,12 @@ linear issues list --limit 10
 linear issues branch ANN-123 --json
 linear issues browse
 linear issues create --input '{"title":"Investigate bug","teamId":"<team-id>"}'
+linear issues create --state "Todo" --input '{"title":"Investigate bug","teamId":"<team-id>"}'
 linear issues update ANN-123 --state "In Progress"   # set state by name, no stateId needed
+linear issues bulk-update --ids ANN-123,ANN-124 --state "In Progress" --dry-run --json
+linear comments list --issue ANN-123 --json
+linear prep ANN-123 --json
+linear pr-ready ANN-123 --pr https://github.com/org/repo/pull/123 --json
 linear projects list
 linear documents list
 

@@ -122,13 +122,14 @@ const resourceExamples: Record<string, ResourceExamples> = {
       examples: [
         'linear issues list --limit 10 --state "In Progress" --assignee me',
         "linear issues list --mine --view detail --fields identifier,title,assigneeName",
-        "linear issues list --all --json",
+        "linear issues list --team ENG --all --json",
       ],
     },
     create: {
       required: "teamId plus (title or templateId)",
       examples: [
         'linear issues create --input \'{"teamId":"<team-id>","title":"My issue"}\'',
+        'linear issues create --state "Todo" --input \'{"teamId":"<team-id>","title":"My issue"}\'',
         'linear issues create --template "Bug Report" --input \'{"teamId":"<team-id>"}\' --json',
       ],
     },
@@ -328,7 +329,10 @@ const resourceExamples: Record<string, ResourceExamples> = {
     list: {
       filters: [],
       pagination: "basic",
-      examples: ["linear comments list --limit 25 --json"],
+      examples: [
+        "linear comments list --limit 25 --json",
+        "linear comments list --issue ANN-123 --json",
+      ],
     },
     create: {
       required: "body",

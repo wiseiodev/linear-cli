@@ -65,6 +65,10 @@ describe("help output", () => {
       program.commands.find((command) => command.name() === "my-work")?.helpInformation() ?? "";
     const triageHelp =
       program.commands.find((command) => command.name() === "triage")?.helpInformation() ?? "";
+    const prepHelp =
+      program.commands.find((command) => command.name() === "prep")?.helpInformation() ?? "";
+    const prReadyHelp =
+      program.commands.find((command) => command.name() === "pr-ready")?.helpInformation() ?? "";
 
     expect(help).toContain("--version");
     expect(help).toContain("docs");
@@ -72,6 +76,8 @@ describe("help output", () => {
     expect(help).toContain("doctor");
     expect(help).toContain("my-work");
     expect(help).toContain("triage");
+    expect(help).toContain("prep");
+    expect(help).toContain("pr-ready");
     expect(help).toContain("issues");
     expect(help).toContain("initiatives");
     expect(help).toContain("documents");
@@ -107,9 +113,11 @@ describe("help output", () => {
     expect(projectUpdatesHelp).toContain("list");
     expect(initiativeUpdatesHelp).toContain("update");
     expect(notificationsHelp).toContain("list");
-    expect(doctorHelp).toContain("Validate auth");
+    expect(doctorHelp).toContain("binary install");
     expect(myWorkHelp).toContain("assigned");
     expect(triageHelp).toContain("triage");
+    expect(prepHelp).toContain("Prepare to work");
+    expect(prReadyHelp).toContain("Move an issue to review");
   });
 
   test("subcommands surface filters, examples, and input field hints", () => {
@@ -130,12 +138,17 @@ describe("help output", () => {
     const customersListCommand = customersCommand?.commands.find(
       (command) => command.name() === "list",
     );
+    const commentsCommand = program.commands.find((command) => command.name() === "comments");
+    const commentsListCommand = commentsCommand?.commands.find(
+      (command) => command.name() === "list",
+    );
 
     const issuesListHelp = captureRenderedHelp(issuesListCommand);
     const issuesCreateHelp = captureRenderedHelp(issuesCreateCommand);
     const issuesUpdateHelp = captureRenderedHelp(issuesUpdateCommand);
     const projectsCreateHelp = captureRenderedHelp(projectsCreateCommand);
     const customersListHelp = captureRenderedHelp(customersListCommand);
+    const commentsListHelp = captureRenderedHelp(commentsListCommand);
 
     expect(issuesListHelp).toContain("Filters, pagination, and output");
     expect(issuesListHelp).toContain("--team");
@@ -158,6 +171,17 @@ describe("help output", () => {
 
     expect(customersListHelp).toContain("Filters, pagination, and output");
     expect(customersListHelp).toContain("linear customers list");
+    expect(commentsListHelp).toContain("--issue");
+  });
+
+  test("registers agent-friendly command aliases", () => {
+    const program = createProgram();
+    const issuesCommand = program.commands.find((command) => command.name() === "issues");
+    const statesCommand = program.commands.find((command) => command.name() === "states");
+    const issueGet = issuesCommand?.commands.find((command) => command.name() === "get");
+
+    expect(issueGet?.aliases()).toEqual(["view", "show"]);
+    expect(statesCommand?.aliases()).toEqual(["statuses", "workflow-states"]);
   });
 
   test("list help only advertises options that the handler honors", () => {

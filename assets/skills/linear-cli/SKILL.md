@@ -28,11 +28,14 @@ Read the branch from `.data.branchName`.
 ## Common Issue Commands
 
 ```bash
-linear issues list --json
+linear issues list --limit 25 --json
 linear issues get <id-or-identifier> --json
 linear issues create --input '{"teamId":"<team-id>","title":"Investigate issue"}' --json
 linear issues update <id-or-identifier> --input '{"priority":2}' --json
 linear issues branch <id-or-identifier> --json
+linear comments list --issue <id-or-identifier> --json
+linear prep <id-or-identifier> --json
+linear pr-ready <id-or-identifier> --pr <url> --json
 ```
 
 For list workflows, use filters instead of broad scans when possible:
@@ -45,7 +48,7 @@ linear issues list --query "search text" --json
 linear issues list --updated-after 2026-05-01 --json
 linear issues list --created-after -P7D --json
 linear issues list --parent ENG-123 --json
-linear issues list --no-parent --json
+linear issues list --team ENG --no-parent --json
 ```
 
 Use pagination flags for bounded queries:
@@ -62,6 +65,8 @@ Issue creation requires `teamId` plus either `title` or a template:
 
 ```bash
 linear issues create --input '{"teamId":"<team-id>","title":"New issue title"}' --json
+linear issues create --state "Todo" --input '{"teamId":"<team-id>","title":"New issue title"}' --json
+linear issues create --input '{"teamId":"<team-id>","title":"New issue title","state":"Todo"}' --json
 linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}' --json
 ```
 
@@ -88,6 +93,8 @@ You do not need a `stateId` UUID to change an issue's state. Pass the state name
 linear issues update ENG-123 --state "In Progress" --json
 linear issues update ENG-123 --input '{"state":"In Progress"}' --json
 linear issues update ENG-123 --input '{"stateName":"In Progress"}' --json
+linear issues create --state "Todo" --input '{"teamId":"<team-id>","title":"New issue"}' --json
+linear issues bulk-update --ids ENG-123,ENG-124 --state "In Progress" --dry-run --json
 ```
 
 All three are equivalent. A raw `stateId` UUID still works and is used as-is:
@@ -114,8 +121,12 @@ These are the patterns agents reach for that do not work, with the command that 
 | Goal | Do not use | Use instead |
 | --- | --- | --- |
 | Set an issue's state | Hand-crafting or guessing a `stateId` UUID | `linear issues update <id> --state "In Progress"` (or `--input '{"state":"In Progress"}'`; the name resolves automatically) |
-| Discover workflow states | `linear statuses`, `linear workflow-states`, `linear list-states` | `linear states list --json` |
-| Read one issue | `linear issues view <id>` / `linear issues show <id>` | `linear issues get <id> --json` |
+| Discover workflow states | Guessing `list-states` or parsing team payloads | `linear states list --json` (`statuses` and `workflow-states` are accepted aliases) |
+| Read one issue | Treating an alias as the canonical docs target | `linear issues get <id> --json` (`view` and `show` also work) |
+| Read issue discussion | `linear comments list` with a broad scan | `linear comments list --issue <id-or-identifier> --json` |
+| List issues | `linear issues list --all --json` with no filters | Add `--mine`, `--team`, `--state`, `--query`, or `--limit` |
+| Start work | Multiple commands to fetch context, branch, and set state | `linear prep <id> --json` |
+| Mark PR ready | Separate update plus hand-written PR comment | `linear pr-ready <id> --pr <url> --json` |
 
 ## Batch Workflows
 
@@ -124,10 +135,28 @@ Use `bulk-update` for multi-issue updates. Start with `--dry-run` and inspect th
 ```bash
 linear issues bulk-update --ids ENG-123,ENG-124 --input '{"priority":2}' --dry-run --json
 linear issues bulk-update --ids ENG-123,ENG-124 --input '{"priority":2}' --json
+linear issues bulk-update --ids ENG-123,ENG-124 --state "In Progress" --dry-run --json
 linear issues bulk-update --input-file updates.json --dry-run --json
 ```
 
-For per-issue input files, use an array where each object includes the target issue id or identifier plus update fields.
+For per-issue input files, use an array where each object includes the target issue id or identifier plus update fields. A shared `--state` applies to every item and resolves per issue team; per-item `state` or `stateName` also works.
+
+## Prep And PR Ready
+
+Use `prep` when starting work. It fetches the issue, parent or project context, branch name, and moves the issue to the team's in-progress state:
+
+```bash
+linear prep ENG-123 --json
+linear prep ENG-123 --state "Doing" --json
+```
+
+Use `pr-ready` when the branch is ready for review. It moves the issue to `In Review` unless you override the state, and comments only when you ask for one:
+
+```bash
+linear pr-ready ENG-123 --json
+linear pr-ready ENG-123 --pr https://github.com/org/repo/pull/123 --json
+linear pr-ready ENG-123 --comment "Ready for review" --json
+```
 
 ## Linear Linking In GitHub
 

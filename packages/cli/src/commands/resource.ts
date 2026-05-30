@@ -4,7 +4,12 @@ import type {
   LinearEntity,
   OutputEnvelope,
 } from "@wiseiodev/linear-core";
-import { errorEnvelope, normalizeError, successEnvelope } from "@wiseiodev/linear-core";
+import {
+  errorEnvelope,
+  LinearCoreError,
+  normalizeError,
+  successEnvelope,
+} from "@wiseiodev/linear-core";
 import type { Command } from "commander";
 import { renderEnvelope } from "../formatters/output.js";
 import { getResourceHelpTexts } from "../help/resource-help.js";
@@ -57,6 +62,7 @@ async function executeAction(
 }
 
 export interface ResourceCommandOptions {
+  readonly list?: { readonly rejectPositionals?: boolean };
   readonly update?: { readonly allowEmptyInput?: boolean };
 }
 
@@ -77,12 +83,26 @@ export function registerResourceCommand(
 
   if (handlers.list) {
     const listHandler = handlers.list;
-    const listCommand = command
-      .command("list")
-      .description(`List ${entity}`)
-      .action(async (_, cmd) =>
+    const listCommand = command.command("list").description(`List ${entity}`);
+    if (options.list?.rejectPositionals) {
+      listCommand
+        .argument("[unexpected...]", "Use --team, --query, --state, or another filter instead")
+        .action(async (unexpected: readonly string[] | undefined, _opts, cmd) => {
+          await executeAction(entity, "list", cmd, () => {
+            if (unexpected && unexpected.length > 0) {
+              throw new LinearCoreError(
+                "InvalidInput",
+                `Unexpected positional argument "${unexpected.join(" ")}". Use --team <key>, --query <text>, --state <name>, or another filter with ${entity} list.`,
+              );
+            }
+            return listHandler(authManager, cmd);
+          });
+        });
+    } else {
+      listCommand.action(async (_, cmd) =>
         executeAction(entity, "list", cmd, () => listHandler(authManager, cmd)),
       );
+    }
     if (helpTexts.list) {
       listCommand.addHelpText("after", helpTexts.list);
     }
@@ -92,6 +112,7 @@ export function registerResourceCommand(
     const getHandler = handlers.get;
     command
       .command("get")
+      .aliases(["view", "show"])
       .description(`Get ${entity} by id`)
       .argument("<id>", "Entity id")
       .action(async (id, _, cmd) =>
