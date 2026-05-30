@@ -470,7 +470,7 @@ function toTemplate(record: SdkTemplateLike): TemplateRecord {
   };
 }
 
-function toListVariables(options: ListOptions): { first: number; after?: string | null } {
+function toListVariables(options: ListOptions): Record<string, unknown> {
   const base = {
     first: options.limit ?? 50,
   };
@@ -1055,7 +1055,12 @@ export class LinearGateway {
   }
 
   public async listComments(options: ListOptions): Promise<PageResult<CommentRecord>> {
-    const connection = await this.client.comments(toListVariables(options));
+    const variables = toListVariables(options);
+    if (options.issueId) {
+      variables.filter = { issue: { id: { eq: options.issueId } } };
+    }
+
+    const connection = await this.client.comments(variables);
     return {
       items: connection.nodes.map(toComment),
       nextCursor: connection.pageInfo.endCursor ?? null,

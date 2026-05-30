@@ -80,6 +80,7 @@ export interface ListOptions {
   readonly limit?: number;
   readonly cursor?: string | null;
   readonly parent?: string;
+  readonly issueId?: string;
 }
 
 export type ViewPreset = "table" | "detail" | "dense";

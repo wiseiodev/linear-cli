@@ -5,6 +5,8 @@ Task-first workflows:
   linear doctor
   linear my-work --mine
   linear triage --team ENG
+  linear prep ANN-123 --json
+  linear pr-ready ANN-123 --pr https://github.com/org/repo/pull/123 --json
   linear project status <project-id>
   linear updates --limit 20
 
@@ -20,6 +22,8 @@ Examples:
   linear issues branch --help
   linear issues list --limit 10 --state "In Progress" --assignee me
   linear issues branch ANN-123 --json
+  linear prep ANN-123 --json
+  linear pr-ready ANN-123 --comment "Ready for review" --json
   linear issues browse
   linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}'
   linear customers list
@@ -52,14 +56,16 @@ Examples:
   linear issues list --limit 10 --json
   linear issues list --mine --state "Todo" --view detail
   linear issues list --parent ANN-123 --json
-  linear issues list --fields identifier,title,assigneeName,projectName
+  linear issues list --limit 10 --fields identifier,title,assigneeName,projectName
   linear issues list --project "Evalite setup" --label eng --priority 2 --json
   linear issues list --query "evalite" --json
   linear issues list --updated-after 2026-05-01 --json
   linear issues list --created-after -P7D --json
-  linear issues list --no-parent --json
+  linear issues list --team ENG --no-parent --json
   linear issues create --template "Bug Report" --input '{"teamId":"<team-id>"}' --json
+  linear issues create --state "Todo" --input '{"teamId":"<team-id>","title":"My issue"}' --json
   linear issues bulk-update --ids ANN-1,ANN-2 --input '{"priority":2}' --dry-run --json
+  linear issues bulk-update --ids ANN-1,ANN-2 --state "In Progress" --dry-run --json
   linear issues bulk-update --input-file updates.json --json
 `;
 

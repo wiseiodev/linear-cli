@@ -69,11 +69,14 @@ describe("skills catalog", () => {
     );
 
     expect(content).toContain("name: linear-cli");
-    expect(content).toContain("linear issues list --json");
+    expect(content).toContain("linear issues list --limit 25 --json");
     expect(content).toContain("linear issues get <id-or-identifier> --json");
     expect(content).toContain("linear issues create --input");
     expect(content).toContain("linear issues update <id-or-identifier>");
     expect(content).toContain("linear issues branch <id-or-identifier> --json");
+    expect(content).toContain("linear comments list --issue <id-or-identifier> --json");
+    expect(content).toContain("linear prep <id-or-identifier> --json");
+    expect(content).toContain("linear pr-ready <id-or-identifier> --pr <url> --json");
     expect(content).toContain("linear auth status --json");
     expect(content).toContain("linear issues bulk-update");
     expect(content).toContain("Fixes ENG-123");
@@ -98,9 +101,16 @@ describe("skills catalog", () => {
 
     expect(content).toContain("## Set Issue State By Name");
     expect(content).toContain('linear issues update ENG-123 --state "In Progress" --json');
+    expect(content).toContain('linear issues create --state "Todo"');
+    expect(content).toContain(
+      'linear issues bulk-update --ids ENG-123,ENG-124 --state "In Progress"',
+    );
     expect(content).toContain('linear issues update ENG-123 --input \'{"state":"In Progress"}\'');
     expect(content).toContain("linear states list --json");
     expect(content).toContain("## Common Mistakes");
+    expect(content).toContain("linear comments list --issue <id-or-identifier> --json");
+    expect(content).toContain("linear prep <id> --json");
+    expect(content).toContain("linear pr-ready <id> --pr <url> --json");
   });
 
   test("fails gracefully for unknown skill", async () => {

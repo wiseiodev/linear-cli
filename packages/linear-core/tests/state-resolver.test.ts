@@ -1,6 +1,7 @@
-import type { ResolvableWorkflowState } from "@wiseiodev/linear-core";
-import { LinearCoreError, resolveStateId } from "@wiseiodev/linear-core";
 import { describe, expect, test, vi } from "vitest";
+import type { ResolvableWorkflowState } from "../src/entities/state-resolver.js";
+import { resolveStateId } from "../src/entities/state-resolver.js";
+import { LinearCoreError } from "../src/errors/core-error.js";
 
 const STATES: readonly ResolvableWorkflowState[] = [
   { id: "s-backlog", name: "Backlog", type: "backlog", position: 0 },

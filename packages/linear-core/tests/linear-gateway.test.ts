@@ -737,6 +737,26 @@ describe("LinearGateway", () => {
     expect(result.url).toBe("https://linear.app/comment/comment_1");
   });
 
+  test("lists comments scoped to an issue id", async () => {
+    const baseClient = createTestClient();
+    const calls: Record<string, unknown>[] = [];
+    const client: SdkLinearClient = {
+      ...baseClient,
+      async comments(variables: unknown) {
+        calls.push(variables as Record<string, unknown>);
+        return baseClient.comments(variables as never);
+      },
+    };
+    const gateway = new LinearGateway(client);
+
+    await gateway.listComments({ limit: 10, issueId: "issue-uuid" });
+
+    expect(calls[0]).toEqual({
+      first: 10,
+      filter: { issue: { id: { eq: "issue-uuid" } } },
+    });
+  });
+
   test("updates attachment and maps subtitle and updatedAt", async () => {
     const gateway = new LinearGateway(createTestClient());
     const result = await gateway.updateAttachment("att_1", { title: "Updated attachment" });
